@@ -1,6 +1,8 @@
 import numpy as np
-from numba import njit, prange
-from skimage import measure
+
+from data_structures import bucket as b
+from data_structures import voxel as v
+from data_structures import hash_entry as he
 
 try:
     import pycuda.driver as cuda
@@ -12,12 +14,39 @@ except Exception as err:
     print('Failed to import PyCUDA. Running fusion in CPU mode.')
     FUSION_GPU_MODE = 0
 
+
 class HashTable:
     """
     The data structure for voxel storage and retrieval: hash tables
     """
 
-    def __init__(self, vol_bnds, voxel_size, use_gpu=True):
+    def __init__(self, vol_bounds, voxel_size, use_gpu=True):
+        print("Initializing hash maps ... ")
+        vol_bounds = np.asarray(vol_bounds)
+        assert vol_bounds.shape == (3, 2), "[!] `vol_bounds` should be of shape (3, 2)."
+
+        self._vol_bounds = vol_bounds
+        self._voxel_size = voxel_size
+        self._trunc_margin = 5 * self._voxel_size
+        self._color_const = 256 * 256
+        self._vol_dim = np.ceil((self._vol_bounds[:, 1] - self._vol_bounds[:, 0]) / self._voxel_size).copy(
+            order='C').astype(int)
+        self._vol_bounds[:, 1] = self._vol_bounds[:, 0] + self._vol_dim * self._voxel_size
+        self._vol_origin = self._vol_bounds[:, 0].copy(order='C').astype(np.float32)
+        print("Voxel volume size: {} x {} x {} - # points: {:,}".format(
+            self._vol_dim[0], self._vol_dim[1], self._vol_dim[2],
+            self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2])
+        )
+
+        self._hash_table = []
+        self._table_size = self.estimate_table_size_according_to_voxel_grid_dimension()
+        self._bucket_size = 5
+        for i in range(self._table_size):
+            bucket = b.Bucket(self._bucket_size, i)
+            self._hash_table.append(bucket)
+
+    def estimate_table_size_according_to_voxel_grid_dimension(self):
+        return self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2]
 
     def integrate(self):
         """
@@ -25,51 +54,31 @@ class HashTable:
         :return:
         """
 
-    def generate_key(self, voxel):
+    def hash_function(self, world_coord):
         """
         generate the hash key of the given voxel and hash function:
-        # H(x,y,z) = (x*p1 xor y*p2 xor z*p3) mod n
-        :param voxel:
+            H(x,y,z) = (x*p1 xor y*p2 xor z*p3) mod n
+        where n is the hash table size - the number of buckets
+        :param world_coord: world coordinate (x,y,z) in np array
         :return: the hash key of the voxel
         """
-        P_1 = 73856093
-        P_2 = 19349669
-        P_3 = 83492791
-        return ()
+        p1, p2, p3 = 73856093, 19349669, 83492791
 
+        try:
+            x, y, z = world_coord[0], world_coord[1], world_coord[2]
+        except IndexError:
+            print("hash_fusion.hash_function: invalid world_coord input.")
 
-class HashEntry:
+        return np.remainder(np.bitwise_xor(np.bitwise_xor(x * p1, y * p2), z * p3), self._table_size)
 
-    def __init__(self, position, offset, voxel):
-        self.position = position
-        self.offset = offset
-        self.voxel = voxel
-
-class Voxel:
-    """
-
-    """
-
-    def __init__(self, dist, color, weight):
-        self.dist = dist
-        self.color = color
-        self.weight = weight
-
-    def integrate(self, new_dist, obs_weight=1.):
+    def get_hash_entry(self, world_coord):
         """
-        D’(v) = (D(v)W(v) + w_i(v)d_i(v)) / W(v) + w_i(v)
-        W’(v) = W(v) + w_i(v)
-
-        integrate the current image frame to the voxel
-        :param new_dist: the distance of the voxel to the implicit surface
-        :param obs_weight: the weight to assign for the current observation
-        :return:
+        get the hash entry of the voxel
         """
-        w_old = self.weight
-        d_old = self.dist
-        w_new = w_old + obs_weight
-        d_new = (d_old * w_old + new_dist * obs_weight) / w_new
-        self.weight = w_new
-        self.dist = d_new
+
 
 if __name__ == '__main__':
+    voxel_container = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, False)
+    world_coords = [[2, 5, 2], [4, 6, 2], [64, 2, 65], [23, 5, 63]]
+    for world_coord in world_coords:
+        print(voxel_container.hash_function(world_coord))

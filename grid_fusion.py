@@ -27,6 +27,7 @@ class TSDFVolume:
         xyz bounds (min/max) in meters.
       voxel_size (float): The volume discretization in meters.
     """
+    print("Initializing voxel grids ... ")
     vol_bnds = np.asarray(vol_bnds)
     assert vol_bnds.shape == (3, 2), "[!] `vol_bnds` should be of shape (3, 2)."
 
