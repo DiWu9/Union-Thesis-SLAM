@@ -9,7 +9,7 @@ class Bucket:
     def __init__(self, bucket_id, bucket_size=5):
         self._bucket_list = []
         self._bucket_size = bucket_size
-        self._id = bucket_id
+        self._id = bucket_id  # not sure if useful
 
     def is_full(self):
         return len(self._bucket_list) >= self._bucket_size
@@ -47,6 +47,12 @@ class Bucket:
                 appended_list.append(hash_entry)
         else:
             self._bucket_list.append(hash_entry)
+
+    def remove_hash_entry(self, world_coord):
+        temp_entry = he.HashEntry(world_coord, None, None)
+        if self.contains(temp_entry):
+            return 0
+            # implement remove
 
     def contains(self, hash_entry):
         """

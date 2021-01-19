@@ -36,5 +36,5 @@ if __name__ == '__main__':
     entry = HashEntry(np.array([1, 2, 3]), None, v.Voxel(None, None, None))
     entry2 = HashEntry(np.array([1, 2, 3]), None, v.Voxel(None, None, None))
     print(entry.equals(entry2))
-    print(np.array_equal(np.array([1,2,3]), np.array([1,2,3])))
+    print(np.array_equal(np.array([1, 2, 3]), np.array([1, 2, 3])))
     print("Test finished")

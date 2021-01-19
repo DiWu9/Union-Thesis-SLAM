@@ -17,9 +17,12 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 
 #### 01/18/2021 
 + initial commit
++ finish constructor of bucket, voxel, hash entry, and hash map
 
 #### 01/19/2021 
-+
++ add data structures folder, which includes bucket, voxel, and hash entry
++ bucket: implement add, retrieval of hash entry (**Todo:** remove)
++ hash_fusion.py: implement hash table size estimation, hash function
 
 #### 01/20/2021 
 +

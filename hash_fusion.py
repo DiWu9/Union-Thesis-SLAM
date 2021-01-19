@@ -76,10 +76,9 @@ class HashTable:
 
         try:
             x, y, z = world_coord[0], world_coord[1], world_coord[2]
+            return np.remainder(np.bitwise_xor(np.bitwise_xor(x * p1, y * p2), z * p3), self._table_size)
         except IndexError:
             print("hash_fusion.hash_function: invalid world_coord input.")
-
-        return np.remainder(np.bitwise_xor(np.bitwise_xor(x * p1, y * p2), z * p3), self._table_size)
 
     def add(self, voxel, world_coord):
         """
@@ -88,7 +87,6 @@ class HashTable:
         hash_entry = he.HashEntry(world_coord, None, voxel)
         hash_value = self.hash_function(world_coord)
         bucket = self.get_bucket_by_id(hash_value)
-
 
 
     def add_hash_entry(self, hash_entry):
