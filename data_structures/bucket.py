@@ -6,24 +6,38 @@ from data_structures import voxel as v
 
 class Bucket:
 
-    def __init__(self, bucket_id, bucket_size=5):
-        self._bucket_list = []
+    def __init__(self, bucket_size=5):
         self._bucket_size = bucket_size
-        self._id = bucket_id  # not sure if useful
+        self._bucket_list = [None] * self._bucket_size
 
     def is_full(self):
-        return len(self._bucket_list) >= self._bucket_size
+        """
+        check if the bucket is full or not,
+        if there's one element in the bucket is None, it means this place is empty
+        """
+        for element in self._bucket_list:
+            if element is None:
+                return False
+        return True
 
     def is_empty(self):
-        return len(self._bucket_list) <= 0
-
-    def get_bucket_id(self):
-        return self._id
+        """
+        check if the bucket is empty
+        cannot check it by len(bucket) == 0 because [None] has length 1
+        """
+        return np.array_equal(self._bucket_list, [None] * self._bucket_size)
 
     def get_num_entry_stored(self):
-        return len(self._bucket_list)
+        """
+        check how many entries are stored in the bucket
+        """
+        count = 0
+        for hash_entry in self._bucket_list:
+            if hash_entry is not None:
+                count += 1
+        return count
 
-    def get_bottom_entry(self):
+    def get_last_entry(self):
         """
         when there bucket is full, get the bottom entry
         throw exception if bucket is not full
@@ -31,7 +45,7 @@ class Bucket:
         if self.is_full():
             return self._bucket_list[-1]
         else:
-            raise Exception("bucket.get_bottom_entry: the bucket does not reach the bottom (not full)")
+            raise Exception("bucket.get_last_entry: the bucket is not full yet")
 
     def add_hash_entry(self, hash_entry):
         """
@@ -43,7 +57,7 @@ class Bucket:
             raise Exception("bucket.add_hash_entry: entry collides with an existing one with same world coord")
         if self.is_full():
             if self._has_appended_list():
-                appended_list = self.get_bottom_entry().get_appended_list()
+                appended_list = self.get_last_entry().get_appended_list()
                 appended_list.append(hash_entry)
         else:
             self._bucket_list.append(hash_entry)
@@ -65,7 +79,7 @@ class Bucket:
                 if bucket_entry.equals(hash_entry):
                     return True
             if self._has_appended_list():
-                appended_list = self.get_bottom_entry().get_appended_list()
+                appended_list = self.get_last_entry().get_appended_list()
                 for list_entry in appended_list:
                     if list_entry.equals(hash_entry):
                         return True
@@ -78,7 +92,7 @@ class Bucket:
                 if bucket_entry.equals(temp_entry):
                     return bucket_entry
             if self._has_appended_list():
-                appended_list = self.get_bottom_entry().get_appended_list()
+                appended_list = self.get_last_entry().get_appended_list()
                 for list_entry in appended_list:
                     if list_entry.equals(temp_entry):
                         return list_entry
@@ -89,7 +103,7 @@ class Bucket:
         when there is a bucket overflow, check if the bucket has already had a linked list
         """
         if self.is_full():
-            last_entry = self.get_bottom_entry()
+            last_entry = self.get_last_entry()
             return not last_entry.is_empty_offset()
         else:
             return False

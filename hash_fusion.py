@@ -38,18 +38,19 @@ class HashTable:
             self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2])
         )
 
-        self._hash_table = []
-        self._table_size = self.estimate_num_bucket_according_to_voxel_grid_dimension()
+        self._table_size = 1000000
+        self._hash_table = [None] * self._table_size
+        self._num_entries_stored = 0
         print("Number of buckets: {}".format(self._table_size))
         self._bucket_size = 5
-        for i in range(self._table_size):
-            bucket = b.Bucket(i, self._bucket_size)
-            self._hash_table.append(bucket)
 
+    """
     def estimate_num_bucket_according_to_voxel_grid_dimension(self, load_factor=0.75):
         """
+    """
         estimate the number of buckets needed by the hash table
-        """
+    """
+    """
         num_points_estimate = self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2] / 10
         num_buckets = np.num_points_estimate / load_factor
         if num_buckets < 10000:
@@ -57,6 +58,7 @@ class HashTable:
         else:
             rounded_num_buckets = num_buckets - np.remainder(num_buckets, 1000)
             return rounded_num_buckets
+    """
 
     def integrate(self):
         """
@@ -88,13 +90,11 @@ class HashTable:
         hash_value = self.hash_function(world_coord)
         bucket = self.get_bucket_by_id(hash_value)
 
-
     def add_hash_entry(self, hash_entry):
         """
         add the hash_entry to the hash map
         resolve collisions
         """
-
 
     def get_voxel(self, world_coord):
         """
@@ -106,19 +106,35 @@ class HashTable:
         get hash entry by its world coordinate
         """
 
-
     def remove(self, world_coord):
         """
         remove the voxel in the given world coordinate
         if there exist a voxel, return the voxel; else return None
         """
 
-
     def get_bucket_by_id(self, hash_val):
         try:
             return self._hash_table[hash_val]
         except IndexError:
             print("hash_fusion.get_bucket_by_id: invalid hash value (id)")
+
+    def garbage_collection(self):
+        """after the image integration, remove voxels that have 0 weight will be removed"""
+
+    def _add_entry_num(self):
+        self._num_entries_stored += 1
+
+    def _extend_table_size_by_2(self):
+        """
+        resize the hash table to accommodate more hash entries within load factor of 0.75
+        """
+        self._table_size = self._table_size * 2
+        new_hash_table = [None] * self._table_size
+        for bucket in self._hash_table:
+            if bucket is not None:
+                temp_list = []
+                world_coord = bucket.()
+                i = self.hash_function(world_coord)
 
 
 if __name__ == '__main__':
