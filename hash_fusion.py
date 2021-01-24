@@ -128,14 +128,31 @@ class HashTable:
         """
         resize the hash table to accommodate more hash entries within load factor of 0.75
         """
-        self._table_size = self._table_size * 2
-        new_hash_table = [None] * self._table_size
-        for bucket in self._hash_table:
-            if bucket is not None:
-                temp_list = []
-                world_coord = bucket.()
-                i = self.hash_function(world_coord)
+        print("Resizing hash table from {} to {}".format(self._table_size, self._table_size * 2))
 
+        # extracting all hash entries to the temporary entry buffer
+        temp_entry_buffer = []
+        for i in range(self._table_size):
+            bucket = self.get_bucket_by_id(i)
+            if bucket is None:
+                continue
+            else:
+                entries_of_hash_val_i = self._get_hash_entries_by_hash_value(i)
+                temp_entry_buffer = temp_entry_buffer + entries_of_hash_val_i
+        print("Current number of hash entries: {}.".format(len(temp_entry_buffer)))
+
+        # create the new hash table and fill all hash entries in
+        self._table_size = self._table_size * 2
+        self._hash_table = [None] * self._table_size
+        for hash_entry in temp_entry_buffer:
+            self.add_hash_entry(hash_entry)
+
+        print("Resize finished.")
+
+    def _get_hash_entries_by_hash_value(self, hash_value):
+        """
+
+        """
 
 if __name__ == '__main__':
     voxel_container = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, False)
