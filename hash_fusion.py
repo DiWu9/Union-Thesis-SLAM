@@ -44,22 +44,6 @@ class HashTable:
         print("Number of buckets: {}".format(self._table_size))
         self._bucket_size = 5
 
-    """
-    def estimate_num_bucket_according_to_voxel_grid_dimension(self, load_factor=0.75):
-        """
-    """
-        estimate the number of buckets needed by the hash table
-    """
-    """
-        num_points_estimate = self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2] / 10
-        num_buckets = np.num_points_estimate / load_factor
-        if num_buckets < 10000:
-            return 10000
-        else:
-            rounded_num_buckets = num_buckets - np.remainder(num_buckets, 1000)
-            return rounded_num_buckets
-    """
-
     def integrate(self):
         """
         Integrate a RGB-D image to the hash table
@@ -88,7 +72,7 @@ class HashTable:
         """
         hash_entry = he.HashEntry(world_coord, None, voxel)
         hash_value = self.hash_function(world_coord)
-        bucket = self.get_bucket_by_id(hash_value)
+        bucket = self.get_ith_bucket(hash_value)
 
     def add_hash_entry(self, hash_entry):
         """
@@ -112,19 +96,27 @@ class HashTable:
         if there exist a voxel, return the voxel; else return None
         """
 
-    def get_bucket_by_id(self, hash_val):
+    def get_ith_bucket(self, i):
         try:
-            return self._hash_table[hash_val]
+            return self._hash_table[i]
         except IndexError:
-            print("hash_fusion.get_bucket_by_id: invalid hash value (id)")
+            print("hash_fusion.get_ith_bucket: invalid index")
 
     def garbage_collection(self):
-        """after the image integration, remove voxels that have 0 weight will be removed"""
+        """after the image integration, remove voxels that have 0 weight"""
 
     def _add_entry_num(self):
         self._num_entries_stored += 1
 
-    def _extend_table_size_by_2(self):
+    def _estimate_hash_table_size_by_voxel_grid_dimension(self, load_factor=0.75):
+        """
+        estimate the number of buckets needed by the hash table
+        """
+        # 10 is a magic number and it needs to be tested
+        num_points_estimate = self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2] / 10
+        return num_points_estimate / load_factor
+
+    def _double_table_size(self):
         """
         resize the hash table to accommodate more hash entries within load factor of 0.75
         """
@@ -133,12 +125,8 @@ class HashTable:
         # extracting all hash entries to the temporary entry buffer
         temp_entry_buffer = []
         for i in range(self._table_size):
-            bucket = self.get_bucket_by_id(i)
-            if bucket is None:
-                continue
-            else:
-                entries_of_hash_val_i = self._get_hash_entries_by_hash_value(i)
-                temp_entry_buffer = temp_entry_buffer + entries_of_hash_val_i
+            entries_of_hash_value_i = self._get_hash_entries_by_hash_value(i)
+            temp_entry_buffer = temp_entry_buffer + entries_of_hash_value_i
         print("Current number of hash entries: {}.".format(len(temp_entry_buffer)))
 
         # create the new hash table and fill all hash entries in
@@ -151,9 +139,44 @@ class HashTable:
 
     def _get_hash_entries_by_hash_value(self, hash_value):
         """
-
+        get all hash entries of the specified hash values
         """
-        to_return = []
+        entry_list = []
+        bucket = self.get_ith_bucket(hash_value)
+
+        # returns empty list if bucket does not exist
+        if bucket is None:
+            return entry_list
+
+        # iterate hash entries in the bucket
+        last_entry = None
+        for i in range(self._bucket_size):
+            hash_entry = bucket.get_ith_entry(i)
+            if hash_entry is None:
+                continue
+            else:
+                if self._in_corresponding_bucket(hash_entry, hash_value):
+                    entry_list.append(hash_entry)
+                    last_entry = hash_entry
+
+        # iterate linked list if exists
+        if bucket.is_overflow() and not last_entry.is_empty_offset():
+            pointer = last_entry.get_offset()
+            while pointer is not None:
+                ith_bucket = pointer[0]
+                ith_entry = pointer[1]
+                overflowed_entry = self.get_ith_bucket(ith_bucket).get_ith_entry(ith_entry)
+                if self._in_corresponding_bucket(overflowed_entry, hash_value):
+                    pointer = overflowed_entry.get_offset()
+                    entry_list.append(overflowed_entry)
+
+        return entry_list
+
+    def _in_corresponding_bucket(self, hash_entry, bucket_index):
+        """
+        :return: True when hash entry's value is the index of the bucket, else False (it is pointed by an offset)
+        """
+        return bucket_index == self.hash_function(hash_entry.get_position())
 
 
 if __name__ == '__main__':

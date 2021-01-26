@@ -26,7 +26,8 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 
 #### 01/24/2021 
 + implement hash table resize
-+ 
 
 #### 01/26/2021 
-+
++ modify bucket add, get, remove
++ finish bucket
++ add tests folder, add bucket tests
