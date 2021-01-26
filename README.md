@@ -24,8 +24,9 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 + bucket: implement add, retrieval of hash entry (**Todo:** remove)
 + hash_fusion.py: implement hash table size estimation, hash function
 
-#### 01/20/2021 
-+
+#### 01/24/2021 
++ implement hash table resize
++ 
 
-#### 01/21/2021 
+#### 01/26/2021 
 +

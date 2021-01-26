@@ -8,12 +8,15 @@ class HashEntry:
     def __init__(self, position, offset, voxel):
         """
         world world_coord
-        offset pointer to handle collisions
+        offset pointer to handle collisions, stores a tuple (ith_bucket, ith_index)
         pointer to the voxel block
         """
         self._position = position
         self._offset = offset
         self._voxel = voxel
+
+    def set_offset(self, pointer):
+        self._offset = pointer
 
     def get_position(self):
         return self._position
@@ -21,7 +24,7 @@ class HashEntry:
     def is_empty_offset(self):
         return self._offset is None
 
-    def get_appended_list(self):
+    def get_offset(self):
         if self.is_empty_offset():
             return None
         else:

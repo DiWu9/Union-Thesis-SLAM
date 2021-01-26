@@ -153,6 +153,8 @@ class HashTable:
         """
 
         """
+        to_return = []
+
 
 if __name__ == '__main__':
     voxel_container = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, False)
