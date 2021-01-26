@@ -21,6 +21,9 @@ class HashEntry:
     def get_position(self):
         return self._position
 
+    def get_voxel(self):
+        return self._voxel
+
     def is_empty_offset(self):
         return self._offset is None
 

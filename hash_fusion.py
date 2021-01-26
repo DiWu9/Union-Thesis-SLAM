@@ -66,35 +66,92 @@ class HashTable:
         except IndexError:
             print("hash_fusion.hash_function: invalid world_coord input.")
 
-    def add(self, voxel, world_coord):
+    def add_voxel(self, voxel, world_coord):
         """
         add the (world_coord, voxel) pair to the hash map
         """
         hash_entry = he.HashEntry(world_coord, None, voxel)
-        hash_value = self.hash_function(world_coord)
-        bucket = self.get_ith_bucket(hash_value)
+        self.add_hash_entry(hash_entry)
 
     def add_hash_entry(self, hash_entry):
         """
         add the hash_entry to the hash map
         resolve collisions
+        :return: tuple (ith_bucket, ith_entry), which represents the place it's stored; 0 if add failed
         """
+        if hash_entry is None:
+            return 0
+        hash_value = self.hash_function(hash_entry.get_position())
+        bucket = self.get_ith_bucket(hash_value)
+        if bucket is None:
+            bucket = b.Bucket(self._bucket_size)
+            bucket.add_hash_entry(hash_entry)
+            self.set_ith_bucket(bucket, hash_value)
+            return hash_value, 0
+        else:
+            if bucket.is_full():
+                return self._add_to_linked_list(bucket, hash_value, hash_entry)
+            else:
+                return bucket.add_hash_entry(hash_entry)
+
+    def _add_to_linked_list(self, bucket, hash_value, hash_entry):
+        """
+        add the hash entry to the linked list
+        """
+        found_last_entry = False
+        index = self._bucket_size - 1
+        while not found_last_entry and index >= 0:
+            hash_entry = bucket.get_ith_entry(index)
+            if self._in_corresponding_bucket(hash_entry, hash_value):
+                found_last_entry = True
+            else:
+                index -= 1
+        if found_last_entry:
+            last_entry = hash_entry
+            if last_entry.is_empty_offset():
+                add_success = False
+                bucket_index = hash_value + 1
+                while not add_success:
+                    bucket = self.get_ith_bucket(bucket_index)
+                    if bucket.is_full():
+                        bucket_index += 1
+                        continue
+                    else:
+                        ith_entry = bucket.add_hash_entry(hash_entry)
+                        add_success = True
+                        last_entry.set_offset((bucket_index, ith_entry))
+                        return bucket_index, ith_entry
+        # if bucket is full and all of them belong to linked list
+        else:
+            return  # implement
 
     def get_voxel(self, world_coord):
         """
         get voxel by its world coordinate
         """
+        hash_entry = self.get_hash_entry(world_coords)
+        return hash_entry.get_voxel()
 
     def get_hash_entry(self, world_coord):
         """
         get hash entry by its world coordinate
         """
+        hash_value = self.hash_function(world_coord)
+        temp_hash_entry = he.HashEntry(world_coord, None, None)
+        entries_of_hash_value = self._get_hash_entries_by_hash_value(hash_value)
+        for entry in entries_of_hash_value:
+            if temp_hash_entry.equals(entry):
+                return entry
+        return None
 
     def remove(self, world_coord):
         """
         remove the voxel in the given world coordinate
         if there exist a voxel, return the voxel; else return None
         """
+
+    def set_ith_bucket(self, bucket, i):
+        self._hash_table[i] = bucket
 
     def get_ith_bucket(self, i):
         try:
