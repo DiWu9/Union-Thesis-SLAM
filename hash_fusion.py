@@ -87,6 +87,7 @@ class HashTable:
             bucket = b.Bucket(self._bucket_size)
             bucket.add_hash_entry(hash_entry)
             self.set_ith_bucket(bucket, hash_value)
+            self._num_entries_stored += 1
             return hash_value, 0
         else:
             if bucket.is_full():
@@ -94,14 +95,14 @@ class HashTable:
             else:
                 return bucket.add_hash_entry(hash_entry)
 
-    def _add_to_linked_list(self, bucket, hash_value, hash_entry):
+    def _add_to_linked_list(self, corresponding_bucket, hash_value, hash_entry):
         """
         add the hash entry to the linked list
         """
         found_last_entry = False
         index = self._bucket_size - 1
         while not found_last_entry and index >= 0:
-            hash_entry = bucket.get_ith_entry(index)
+            hash_entry = corresponding_bucket.get_ith_entry(index)
             if self._in_corresponding_bucket(hash_entry, hash_value):
                 found_last_entry = True
             else:
@@ -114,14 +115,19 @@ class HashTable:
                 while not add_success:
                     bucket = self.get_ith_bucket(bucket_index)
                     if bucket.is_full():
-                        bucket_index += 1
+                        # if the last bucket is full, scan the first bucket
+                        if bucket_index >= self._table_size() - 1:
+                            bucket_index = 0
+                        else:
+                            bucket_index += 1
                         continue
                     else:
                         ith_entry = bucket.add_hash_entry(hash_entry)
                         add_success = True
                         last_entry.set_offset((bucket_index, ith_entry))
+                        self._num_entries_stored += 1
                         return bucket_index, ith_entry
-        # if bucket is full and all of them belong to linked list
+        # if bucket is full and all of them belong to linked list (none of them "belongs" to this bucket)
         else:
             return  # implement
 
@@ -144,11 +150,82 @@ class HashTable:
                 return entry
         return None
 
+    def _get_hash_entry(self, ith_bucket, ith_entry):
+        """
+        :return: None if bucket does not exist, else the entry
+        """
+        bucket = self.get_ith_bucket(ith_bucket)
+        if bucket is not None:
+            return bucket.get_ith_entry(ith_entry)
+        else:
+            return None
+
     def remove(self, world_coord):
         """
-        remove the voxel in the given world coordinate
-        if there exist a voxel, return the voxel; else return None
+        remove the hash entry in the given world coordinate
+        :return: 1 if remove done, 0 if remove failed
         """
+        temp_hash_entry = he.HashEntry(world_coord, None, None)
+        self.remove_hash_entry(temp_hash_entry)
+
+    def remove_hash_entry(self, hash_entry):
+        """
+        remove the hash entry
+        :return: 1 if remove done, 0 if remove failed
+        """
+        hash_value = self.hash_function(hash_entry.get_position())
+        bucket = self.get_ith_bucket(hash_value)
+        if bucket is None:
+            return 0
+        else:
+            last_entry = None
+            # case1: hash entry is in the corresponding bucket
+            for i in range(self._bucket_size):
+                element = bucket.get_ith_entry(i)
+                if element is None:
+                    continue
+                else:
+                    if self._in_corresponding_bucket(element, hash_value):
+                        last_entry = element
+                    if hash_entry.equals(element):
+                        # 1a. if this hash entry is not in the linked list and has empty offset, simply remove it
+                        if element.is_empty_offset():
+                            bucket.remove_ith_entry(i)
+                            return 1
+                        # 1b. if this hash entry has an offset, replace this hash entry by the entry it points to
+                        else:
+                            pointer = hash_entry.get_offset()
+                            next_element = self._get_hash_entry(pointer[0], pointer[1])
+                            self._remove_hash_entry(pointer[0], pointer[1])
+                            bucket.set_ith_entry(next_element)
+                            return 1
+            # case2: hash entry is in the linked list
+            if last_entry is not None:
+                current_entry = last_entry
+                pointer = current_entry.get_offset()
+                # iterate linked list
+                while pointer is not None:
+                    next_entry = self._get_hash_entry(pointer[0], pointer[1])
+                    if hash_entry.equals(next_entry):
+                        pointer_to_remove_entry = pointer
+                        pointer = next_entry.get_offset()
+                        # 2a. last element of list, remove it from hash table and remove current entry's offset
+                        if pointer is None:
+                            current_entry.set_offset(None)
+                        # 2b. middle of list, remove it from table and set current entry's offset to next entry's offset
+                        else:
+                            current_entry.set_offset(next_entry.get_offset())
+                        self._remove_hash_entry(pointer_to_remove_entry[0], pointer_to_remove_entry[1])
+                        return 1
+                    else:
+                        current_entry = next_entry
+                        pointer = current_entry.get_offset()
+            return 0
+
+    def _remove_hash_entry(self, ith_bucket, ith_entry):
+        bucket = self.get_ith_bucket(ith_bucket)
+        if bucket is not None:
+            bucket.remove_ith_entry(ith_entry)
 
     def set_ith_bucket(self, bucket, i):
         self._hash_table[i] = bucket
@@ -158,12 +235,6 @@ class HashTable:
             return self._hash_table[i]
         except IndexError:
             print("hash_fusion.get_ith_bucket: invalid index")
-
-    def garbage_collection(self):
-        """after the image integration, remove voxels that have 0 weight"""
-
-    def _add_entry_num(self):
-        self._num_entries_stored += 1
 
     def _estimate_hash_table_size_by_voxel_grid_dimension(self, load_factor=0.75):
         """
@@ -222,7 +293,7 @@ class HashTable:
             while pointer is not None:
                 ith_bucket = pointer[0]
                 ith_entry = pointer[1]
-                overflowed_entry = self.get_ith_bucket(ith_bucket).get_ith_entry(ith_entry)
+                overflowed_entry = self._get_hash_entry(ith_bucket, ith_entry)
                 if self._in_corresponding_bucket(overflowed_entry, hash_value):
                     pointer = overflowed_entry.get_offset()
                     entry_list.append(overflowed_entry)

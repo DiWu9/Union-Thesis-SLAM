@@ -16,6 +16,12 @@ class Bucket:
         except IndexError:
             print("bucket.get_ith_entry: index out of range")
 
+    def set_ith_entry(self, hash_entry, i):
+        self._bucket_list[i] = hash_entry
+
+    def remove_ith_entry(self, i):
+        self._bucket_list[i] = None
+
     def is_full(self):
         """
         check if the bucket is full or not (full doesn't mean overflow)

@@ -31,3 +31,4 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 + modify bucket add, get, remove
 + finish bucket
 + add tests folder, add bucket tests
++ implement hash map: add, get, remove
