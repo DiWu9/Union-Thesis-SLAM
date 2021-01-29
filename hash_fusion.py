@@ -250,19 +250,20 @@ class HashTable:
         """
         print("Resizing hash table from {} to {}".format(self._table_size, self._table_size * 2))
 
-        # extracting all hash entries to the temporary entry buffer
-        temp_entry_buffer = []
-        for i in range(self._table_size):
-            entries_of_hash_value_i = self._get_hash_entries_by_hash_value(i)
-            temp_entry_buffer = temp_entry_buffer + entries_of_hash_value_i
-        print("Current number of hash entries: {}.".format(len(temp_entry_buffer)))
+        original_hash_table = self._hash_table
 
         # create the new hash table and fill all hash entries in
         self._table_size = self._table_size * 2
         self._hash_table = [None] * self._table_size
-        for hash_entry in temp_entry_buffer:
-            self.add_hash_entry(hash_entry)
-
+        for bucket in original_hash_table:
+            if bucket is None:
+                continue
+            else:
+                for hash_entry in bucket:
+                    if hash_entry is None:
+                        continue
+                    else:
+                        self.add_hash_entry(hash_entry)
         print("Resize finished.")
 
     def _get_hash_entries_by_hash_value(self, hash_value):
