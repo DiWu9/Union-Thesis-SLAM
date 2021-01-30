@@ -283,7 +283,7 @@ class HashTable:
         num_points_estimate = self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2] / 10
         return num_points_estimate / load_factor
 
-    def _double_table_size(self):
+    def double_table_size(self):
         """
         resize the hash table to accommodate more hash entries within load factor of 0.75
         """
@@ -298,11 +298,12 @@ class HashTable:
             if bucket is None:
                 continue
             else:
-                for hash_entry in bucket:
-                    if hash_entry is None:
+                for i in range(self._bucket_size):
+                    entry = bucket.get_ith_entry(i)
+                    if entry is None:
                         continue
                     else:
-                        self.add_hash_entry(hash_entry)
+                        self.add_hash_entry(entry)
         print("Resize finished.")
 
     def _get_hash_entries_by_hash_value(self, hash_value):
