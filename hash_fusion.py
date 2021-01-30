@@ -152,7 +152,7 @@ class HashTable:
                 prev_entry.set_offset((idx, 0))
                 return idx, 0
             if bucket.is_full():
-                scanned_entire_map = idx == hash_value
+                scanned_entire_map = idx == begin_bidx
             # bucket is neither none nor full
             else:
                 ith_entry = bucket.add_hash_entry(add_entry)
@@ -349,28 +349,31 @@ class HashTable:
 
 if __name__ == '__main__':
     # initialize 10-bucket hash map, which can store 50 hash entries, for testing
-    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 10, False)
-    world_coords = [[29,  1, 10],[ 6, 40, 14],[ 8, 39, 41],[21, 39,  7],[27,  6, 46],[37,  3, 48],[ 5, 13, 36],[17, 24, 13],[43, 14, 31],[13,  8,  0],[40, 30, 16],[32,  3,  9],[22, 13, 39],[12, 27, 27],[13,  1, 35],[46, 46, 21],[41, 25, 25],[ 2,  6, 11],[35,  3,  7],[9, 2, 9],[47, 30,  7],[36, 42,  2],[45, 17, 28],[11, 15, 12],[ 9,  1, 45],[49, 22,  9],[48,  9, 20],[36, 26, 24],[41, 32, 19],[26,  2, 16],[20, 23, 41],[17, 22,  3],[31, 15, 13],[21, 34, 43],[ 3, 49, 47],[46, 10, 24],[ 0, 31, 45],[ 8, 15, 26],[33, 27, 23],[ 0, 36, 17],[49, 10, 43],[46, 35, 15],[35, 43,  8],[22, 38, 47],[33, 34, 44],[27, 48,  0],[36, 18, 45],[23, 20, 45],[27, 36,  1],[12,49,7]]
-    for position in world_coords:
-        if position == [46,10,24]:
-            print("")
+    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 100, False)
+    world_coords = []
+    for i in range(500):
+        x = np.random.randint(500)
+        y = np.random.randint(500)
+        z = i
+        world_coords.append([x, y, z])
+        position = [x, y, z]
         hash_entry = he.HashEntry(position, None, None)
         hash_value = hash_map.hash_function(position)
         bucket_index, entry_index = hash_map.add_hash_entry(hash_entry)
         print("Point {} of hash value {} is added to ({},{})".format(position, hash_value, bucket_index, entry_index))
     print(hash_map.count_num_hash_entries())
-    for i in range(10):
+    """
+        for i in range(10):
         bucket = hash_map.get_ith_bucket(i)
         for j in range(5):
             entry = bucket.get_ith_entry(j)
             if entry is not None:
                 position = entry.get_position()
                 world_coords.remove(position)
-    print("Test add finished")
     """
-        for position in world_coords:
+    print("Test add finished")
+    for position in world_coords:
         hash_entry = hash_map.get_hash_entry(position)
         print("Get {}.".format(hash_entry))
         expected_entry = he.HashEntry(position, None, None)
         print("Get voxel of position {}. Correctness: {}.".format(position, expected_entry.equals(hash_entry)))
-    """
