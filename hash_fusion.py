@@ -20,7 +20,7 @@ class HashTable:
     The data structure for voxel storage and retrieval: hash tables
     """
 
-    def __init__(self, vol_bounds, voxel_size, use_gpu=True):
+    def __init__(self, vol_bounds, voxel_size, map_size=1000000, use_gpu=True):
         print("Initializing hash maps ... ")
         vol_bounds = np.asarray(vol_bounds)
         assert vol_bounds.shape == (3, 2), "[!] `vol_bounds` should be of shape (3, 2)."
@@ -38,9 +38,8 @@ class HashTable:
             self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2])
         )
 
-        self._table_size = 1000000
+        self._table_size = map_size
         self._hash_table = [None] * self._table_size
-        self._num_entries_stored = 0
         print("Number of buckets: {}".format(self._table_size))
         self._bucket_size = 5
 
@@ -49,6 +48,15 @@ class HashTable:
         Integrate a RGB-D image to the hash table
         :return:
         """
+
+    def count_num_hash_entries(self):
+        num_hash_entries = 0
+        for bucket in self._hash_table:
+            if bucket is None:
+                continue
+            else:
+                num_hash_entries += bucket.get_num_entry_stored()
+        return num_hash_entries
 
     def hash_function(self, world_coord):
         """
@@ -80,20 +88,19 @@ class HashTable:
         :return: tuple (ith_bucket, ith_entry), which represents the place it's stored; 0 if add failed
         """
         if hash_entry is None:
-            return 0
+            return -1, -1
         hash_value = self.hash_function(hash_entry.get_position())
         bucket = self.get_ith_bucket(hash_value)
         if bucket is None:
             bucket = b.Bucket(self._bucket_size)
             bucket.add_hash_entry(hash_entry)
             self.set_ith_bucket(bucket, hash_value)
-            self._num_entries_stored += 1
             return hash_value, 0
         else:
             if bucket.is_full():
                 return self._add_to_linked_list(bucket, hash_value, hash_entry)
             else:
-                return bucket.add_hash_entry(hash_entry)
+                return hash_value, bucket.add_hash_entry(hash_entry)
 
     def _add_to_linked_list(self, corresponding_bucket, hash_value, hash_entry):
         """
@@ -101,41 +108,62 @@ class HashTable:
         """
         found_last_entry = False
         index = self._bucket_size - 1
+        # find the last entry that belongs to the bucket
         while not found_last_entry and index >= 0:
-            hash_entry = corresponding_bucket.get_ith_entry(index)
-            if self._in_corresponding_bucket(hash_entry, hash_value):
+            current_entry = corresponding_bucket.get_ith_entry(index)
+            if self._in_corresponding_bucket(current_entry, hash_value):
                 found_last_entry = True
             else:
                 index -= 1
         if found_last_entry:
-            last_entry = hash_entry
+            last_entry = current_entry
+            # if last entry's offset is None
             if last_entry.is_empty_offset():
-                add_success = False
-                bucket_index = hash_value + 1
-                while not add_success:
-                    bucket = self.get_ith_bucket(bucket_index)
-                    if bucket.is_full():
-                        # if the last bucket is full, scan the first bucket
-                        if bucket_index >= self._table_size() - 1:
-                            bucket_index = 0
-                        else:
-                            bucket_index += 1
-                        continue
-                    else:
-                        ith_entry = bucket.add_hash_entry(hash_entry)
-                        add_success = True
-                        last_entry.set_offset((bucket_index, ith_entry))
-                        self._num_entries_stored += 1
-                        return bucket_index, ith_entry
+                return self._find_next_bucket_and_add_entry(hash_value, last_entry, hash_entry)
+            # last entry has offset
+            else:
+                ith_bucket, ith_entry = last_entry.get_offset()
+                next_on_chain = self._get_hash_entry(ith_bucket, ith_entry)
+                while not next_on_chain.is_empty_offset():
+                    ith_bucket, ith_entry = next_on_chain.get_offset()
+                    next_on_chain = self._get_hash_entry(ith_bucket, ith_entry)
+                return self._find_next_bucket_and_add_entry(ith_bucket, next_on_chain, hash_entry)
         # if bucket is full and all of them belong to linked list (none of them "belongs" to this bucket)
         else:
-            return  # implement
+            print("bucket {} is occupied by alien hash entries.".format(hash_value))  # implement
+
+    def _find_next_bucket_and_add_entry(self, begin_bidx, prev_entry, add_entry):
+        """
+        find the next available bucket to insert the hash entry
+        :return: (idx_bucket, idx_entry) if inserted, else (-1,-1)
+        """
+        scanned_entire_map = False
+        idx = begin_bidx
+        # find the next available bucket to add entry
+        while not scanned_entire_map:
+            # set index to next bucket's index
+            idx = 0 if idx >= self._table_size - 1 else idx + 1
+            bucket = self.get_ith_bucket(idx)
+            if bucket is None:
+                bucket = b.Bucket(self._bucket_size)
+                bucket.add_hash_entry(add_entry)
+                self.set_ith_bucket(bucket, hash_value)
+                prev_entry.set_offset((idx, 0))
+                return idx, 0
+            if bucket.is_full():
+                scanned_entire_map = idx == hash_value
+            # bucket is neither none nor full
+            else:
+                ith_entry = bucket.add_hash_entry(add_entry)
+                prev_entry.set_offset((idx, ith_entry))
+                return idx, ith_entry
+        return -1, -1
 
     def get_voxel(self, world_coord):
         """
         get voxel by its world coordinate
         """
-        hash_entry = self.get_hash_entry(world_coords)
+        hash_entry = self.get_hash_entry(world_coord)
         return hash_entry.get_voxel()
 
     def get_hash_entry(self, world_coord):
@@ -236,6 +264,16 @@ class HashTable:
         except IndexError:
             print("hash_fusion.get_ith_bucket: invalid index")
 
+    def get_next_bucket(self, i):
+        """
+        :return: next bucket in the hash table. (the next bucket of the last bucket is the first bucket)
+        """
+        # check if i is the last bucket
+        if i >= self._table_size - 1:
+            return self._hash_table[0]
+        else:
+            return self._hash_table[i+1]
+
     def _estimate_hash_table_size_by_voxel_grid_dimension(self, load_factor=0.75):
         """
         estimate the number of buckets needed by the hash table
@@ -309,7 +347,16 @@ class HashTable:
 
 
 if __name__ == '__main__':
-    voxel_container = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, False)
-    world_coords = [[2, 5, 2], [4, 6, 2], [64, 2, 65], [23, 5, 63]]
-    for world_coord in world_coords:
-        print(voxel_container.hash_function(world_coord))
+    # initialize 10-bucket hash map, which can store 50 hash entries, for testing
+    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 10, False)
+    for i in range(50):
+        x = np.random.randint(50)
+        y = np.random.randint(50)
+        z = np.random.randint(50)
+        world_coord = np.array([x, y, z])
+        hash_entry = he.HashEntry(world_coord, None, None)
+        hash_value = hash_map.hash_function(world_coord)
+        bucket_index, entry_index = hash_map.add_hash_entry(hash_entry)
+        print("Point ({},{},{}) of hash value {} is added to ({},{})".format(x, y, z, hash_value, bucket_index, entry_index))
+    print(hash_map.count_num_hash_entries())
+    print("Test add finished")
