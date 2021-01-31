@@ -25,11 +25,8 @@ class TestHashMap(unittest.TestCase):
             hash_table.add_hash_entry(hash_entry)
         hash_table.double_table_size()
         self.assertEqual(50, hash_table.count_num_hash_entries())
-        """
-                for position in world_coords:
+        for position in world_coords:
             self.assertIsNotNone(hash_table.get_hash_entry(position))
-
-        """
 
     def test_add_until_full_size_10(self):
         hash_table = hf.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 10, False)

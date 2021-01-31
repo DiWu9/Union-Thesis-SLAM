@@ -114,16 +114,6 @@ class Bucket:
 
 
 if __name__ == '__main__':
-    print('test bucket')
-    entry1 = he.HashEntry(np.array([1, 2, 3]), None, v.Voxel(None, None, None))
-    entry2 = he.HashEntry(np.array([1, 2, 5]), None, v.Voxel(None, None, None))
-    entry3 = he.HashEntry(np.array([1, 2, 4]), None, v.Voxel(None, None, None))
-    entry4 = he.HashEntry(np.array([1, 4, 3]), None, v.Voxel(None, None, None))
-    entry5 = he.HashEntry(np.array([1, 7, 3]), None, v.Voxel(None, None, None))
-    entry6 = he.HashEntry(np.array([1, 2, 3]), None, v.Voxel(None, None, None))
-    entry_list = [entry1, entry2, entry3, entry4, entry5]
-    bucket = Bucket(5)
-    for entry in entry_list:
-        print(bucket.add_hash_entry(entry))
-    print(bucket.contains(entry6))
-    print('finish test')
+    for i in range(5):
+        print(i)
+    print(i)

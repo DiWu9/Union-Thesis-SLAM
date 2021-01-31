@@ -167,10 +167,25 @@ class HashTable:
         """
         hash_value = self.hash_function(world_coord)
         temp_hash_entry = he.HashEntry(world_coord, None, None)
-        entries_of_hash_value = self._get_hash_entries_by_hash_value(hash_value)
-        for entry in entries_of_hash_value:
-            if temp_hash_entry.equals(entry):
-                return entry
+        bucket = self.get_ith_bucket(hash_value)
+        if bucket is not None:
+            if bucket.is_empty():
+                return None
+            last_entry = None
+            # iterate bucket
+            for i in range(self._bucket_size):
+                entry = bucket.get_ith_entry(i)
+                if temp_hash_entry.equals(entry):
+                    return entry
+                if entry is not None:
+                    last_entry = entry
+            # iterate linked list
+            next_in_chain = last_entry
+            while not next_in_chain.is_empty_offset():
+                pointer = next_in_chain.get_offset()
+                next_in_chain = self._get_hash_entry(pointer[0], pointer[1])
+                if temp_hash_entry.equals(next_in_chain):
+                    return next_in_chain
         return None
 
     def _get_hash_entry(self, ith_bucket, ith_entry):
@@ -300,41 +315,6 @@ class HashTable:
                         self.add_hash_entry(entry)
         print("Resize finished.")
 
-    def _get_hash_entries_by_hash_value(self, hash_value):
-        """
-        get all hash entries of the specified hash values
-        """
-        entry_list = []
-        bucket = self.get_ith_bucket(hash_value)
-
-        # returns empty list if bucket does not exist
-        if bucket is None:
-            return entry_list
-
-        # iterate hash entries in the bucket
-        last_entry = None
-        for i in range(self._bucket_size):
-            hash_entry = bucket.get_ith_entry(i)
-            if hash_entry is None:
-                continue
-            else:
-                if self._in_corresponding_bucket(hash_entry, hash_value):
-                    entry_list.append(hash_entry)
-                    last_entry = hash_entry
-
-        # iterate linked list if exists
-        if bucket.is_overflow() and not last_entry.is_empty_offset():
-            pointer = last_entry.get_offset()
-            while pointer is not None:
-                ith_bucket = pointer[0]
-                ith_entry = pointer[1]
-                overflowed_entry = self._get_hash_entry(ith_bucket, ith_entry)
-                if self._in_corresponding_bucket(overflowed_entry, hash_value):
-                    pointer = overflowed_entry.get_offset()
-                    entry_list.append(overflowed_entry)
-
-        return entry_list
-
     def _in_corresponding_bucket(self, hash_entry, bucket_index):
         """
         :return: True when hash entry's value is the index of the bucket, else False (it is pointed by an offset)
@@ -347,8 +327,8 @@ if __name__ == '__main__':
     hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 1000, False)
     world_coords = []
     for i in range(5000):
-        x = np.random.randint(500)
-        y = np.random.randint(500)
+        x = np.random.randint(50)
+        y = np.random.randint(50)
         z = i
         world_coords.append([x, y, z])
         position = [x, y, z]
@@ -367,10 +347,8 @@ if __name__ == '__main__':
                 world_coords.remove(position)
     """
     print("Test add finished")
-    """
-        for position in world_coords:
+    for position in world_coords:
         hash_entry = hash_map.get_hash_entry(position)
         print("Get {}.".format(hash_entry))
         expected_entry = he.HashEntry(position, None, None)
         print("Get voxel of position {}. Correctness: {}.".format(position, expected_entry.equals(hash_entry)))
-    """
