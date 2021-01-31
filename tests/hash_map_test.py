@@ -47,7 +47,19 @@ class TestHashMap(unittest.TestCase):
             hash_table.add_hash_entry(hash_entry)
         self.assertEqual(50, hash_table.count_num_hash_entries(), "50 entries are added")
 
-    # def test_add_until_full_size_100(self):
+    def test_add_until_full_size_1000(self):
+        hash_map = hf.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 1000, False)
+        for i in range(5000):
+            x = np.random.randint(500)
+            y = np.random.randint(500)
+            z = i
+            position = [x, y, z]
+            hash_entry = he.HashEntry(position, None, None)
+            hash_value = hash_map.hash_function(position)
+            bucket_index, entry_index = hash_map.add_hash_entry(hash_entry)
+            print(
+                "Point {} of hash value {} is added to ({},{})".format(position, hash_value, bucket_index, entry_index))
+        self.assertEqual(5000, hash_map.count_num_hash_entries(), "5000 entries are added")
 
 
 if __name__ == '__main__':
