@@ -98,7 +98,6 @@ class HashTable:
             return hash_value, 0
         else:
             if bucket.is_full():
-                print("bucket {} overflow".format(hash_value))
                 return self._add_to_linked_list(bucket, hash_value, hash_entry)
             else:
                 return hash_value, bucket.add_hash_entry(hash_entry)

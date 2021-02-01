@@ -36,3 +36,18 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 #### 01/29/2021 
 + optimize hash table resize
 + modify offset
+
+#### 01/30/2021
++ test add and get entry
++ mix linked list occurs if last entry is an alien entry
++ remove fails when last entry is an alien entry
+
+#### 01/31/2021
++ **update**: reserve last entry only for list head (local entry)
++ test add, get, remove success
++ hash maps can store the maximum of (map_size)*(bucket_size - 1)
+
+#### 02/01/2021
++ 
+
+#### 02/02/2021
