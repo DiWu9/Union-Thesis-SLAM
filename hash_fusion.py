@@ -118,40 +118,40 @@ class HashTable:
                 next_on_chain = self._get_hash_entry(ith_bucket, ith_entry)
             return self._find_next_free_space_and_add_entry(ith_bucket, ith_entry, next_on_chain, hash_entry)
 
-    def _find_next_free_space_and_add_entry(self, begin_bidx, begin_eidx, prev_entry, add_entry):
+    def _find_next_free_space_and_add_entry(self, begin_b_idx, begin_e_idx, prev_entry, add_entry):
         """
         find the next available bucket to insert the hash entry
         :return: (idx_bucket, idx_entry) if inserted, else (-1,-1)
         """
         scanned_entire_map = False
-        bidx = begin_bidx
-        eidx = begin_eidx
-        bucket = self.get_ith_bucket(bidx)
-        # find next available space for current bucket
-        for i in range(eidx, self._bucket_size):
-            ith_entry = bucket.get_ith_entry(eidx)
-            if ith_entry is None:
-                bucket.set_ith_entry(add_entry)
-                prev_entry.set_offset((begin_bidx, i))
-                return begin_bidx, i
+        b_idx = begin_b_idx
+        e_idx = begin_e_idx
+        if e_idx < self._bucket_size - 1:
+            bucket = self.get_ith_bucket(b_idx)
+            # find next available space of current bucket to insert alien entry
+            for i in range(e_idx, self._bucket_size - 1):
+                if bucket.is_empty_entry(i):
+                    bucket.set_ith_entry(add_entry, i)
+                    prev_entry.set_offset((begin_b_idx, i))
+                    return begin_b_idx, i
         # find the next available bucket to add entry
         while not scanned_entire_map:
             # set index to next bucket's index
-            bidx = 0 if bidx >= self._table_size - 1 else bidx + 1
-            bucket = self.get_ith_bucket(bidx)
+            b_idx = 0 if b_idx >= self._table_size - 1 else b_idx + 1
+            bucket = self.get_ith_bucket(b_idx)
             if bucket is None:
                 bucket = b.Bucket(self._bucket_size)
                 bucket.add_hash_entry(add_entry)
-                self.set_ith_bucket(bucket, bidx)
-                prev_entry.set_offset((bidx, 0))
-                return bidx, 0
-            if bucket.is_full():
-                scanned_entire_map = bidx == begin_bidx
+                self.set_ith_bucket(bucket, b_idx)
+                prev_entry.set_offset((b_idx, 0))
+                return b_idx, 0
+            if bucket.is_full_for_alien_entries():
+                scanned_entire_map = b_idx == begin_b_idx
             # bucket is neither none nor full
             else:
                 ith_entry = bucket.add_hash_entry(add_entry)
-                prev_entry.set_offset((bidx, ith_entry))
-                return bidx, ith_entry
+                prev_entry.set_offset((b_idx, ith_entry))
+                return b_idx, ith_entry
         return -1, -1
 
     def get_voxel(self, world_coord):
@@ -215,6 +215,8 @@ class HashTable:
         bucket = self.get_ith_bucket(hash_value)
         if bucket is None:
             return 0
+        if bucket.is_empty():
+            return 0
         else:
             last_entry = None
             # case1: hash entry is in the corresponding bucket
@@ -223,41 +225,39 @@ class HashTable:
                 if element is None:
                     continue
                 else:
-                    if self._in_corresponding_bucket(element, hash_value):
-                        last_entry = element
+                    last_entry = element
                     if hash_entry.equals(element):
                         # 1a. if this hash entry is not in the linked list and has empty offset, simply remove it
                         if element.is_empty_offset():
                             bucket.remove_ith_entry(i)
                             return 1
-                        # 1b. if this hash entry has an offset, replace this hash entry by the entry it points to
+                        # 1b. if last entry and has offset, set last entry to next element and delete next element
+                        # if in corresponding bucket and has offset, then must be the last entry
                         else:
-                            pointer = hash_entry.get_offset()
+                            pointer = element.get_offset()
                             next_element = self._get_hash_entry(pointer[0], pointer[1])
-                            self._remove_hash_entry(pointer[0], pointer[1])
-                            bucket.set_ith_entry(next_element)
+                            self._remove_hash_entry(pointer[0],pointer[1])
+                            bucket.set_ith_entry(next_element, i)
                             return 1
             # case2: hash entry is in the linked list
             if last_entry is not None:
-                current_entry = last_entry
-                pointer = current_entry.get_offset()
+                current_on_chain = last_entry
                 # iterate linked list
-                while pointer is not None:
+                while not current_on_chain.is_empty_offset():
+                    pointer = current_on_chain.get_offset()
                     next_entry = self._get_hash_entry(pointer[0], pointer[1])
-                    if hash_entry.equals(next_entry):
-                        pointer_to_remove_entry = pointer
-                        pointer = next_entry.get_offset()
+                    if next_entry.equals(hash_entry):
+                        next_pointer = next_entry.get_offset()
                         # 2a. last element of list, remove it from hash table and remove current entry's offset
-                        if pointer is None:
-                            current_entry.set_offset(None)
-                        # 2b. middle of list, remove it from table and set current entry's offset to next entry's offset
+                        if next_pointer is None:
+                            current_on_chain.set_offset(None)
+                            self._remove_hash_entry(pointer[0], pointer[1])
+                        # 2b. middle of list, delete it and correct pointer of previous entry
                         else:
-                            current_entry.set_offset(next_entry.get_offset())
-                        self._remove_hash_entry(pointer_to_remove_entry[0], pointer_to_remove_entry[1])
+                            current_on_chain.set_offset(next_pointer)
+                            self._remove_hash_entry(pointer[0], pointer[1])
                         return 1
-                    else:
-                        current_entry = next_entry
-                        pointer = current_entry.get_offset()
+                    current_on_chain = next_entry
             return 0
 
     def _remove_hash_entry(self, ith_bucket, ith_entry):
@@ -323,10 +323,9 @@ class HashTable:
 
 
 if __name__ == '__main__':
-    # initialize 10-bucket hash map, which can store 50 hash entries, for testing
-    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 1000, False)
+    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 100000, False)
     world_coords = []
-    for i in range(5000):
+    for i in range(400000):
         x = np.random.randint(50)
         y = np.random.randint(50)
         z = i
@@ -337,18 +336,10 @@ if __name__ == '__main__':
         bucket_index, entry_index = hash_map.add_hash_entry(hash_entry)
         print("Point {} of hash value {} is added to ({},{})".format(position, hash_value, bucket_index, entry_index))
     print(hash_map.count_num_hash_entries())
-    """
-        for i in range(10):
-        bucket = hash_map.get_ith_bucket(i)
-        for j in range(5):
-            entry = bucket.get_ith_entry(j)
-            if entry is not None:
-                position = entry.get_position()
-                world_coords.remove(position)
-    """
     print("Test add finished")
+
     for position in world_coords:
-        hash_entry = hash_map.get_hash_entry(position)
-        print("Get {}.".format(hash_entry))
-        expected_entry = he.HashEntry(position, None, None)
-        print("Get voxel of position {}. Correctness: {}.".format(position, expected_entry.equals(hash_entry)))
+        entry = he.HashEntry(position, None, None)
+        hash_map.remove_hash_entry(entry)
+    print(hash_map.count_num_hash_entries())
+    print("Test remove finished")

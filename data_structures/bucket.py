@@ -32,6 +32,18 @@ class Bucket:
                 return False
         return True
 
+    def is_full_for_alien_entries(self):
+        """
+        check if the bucket has available space for non-head (alien) entries.
+        """
+        for i in range(self._bucket_size - 1):
+            if self.get_ith_entry(i) is None:
+                return False
+        return True
+
+    def is_empty_entry(self, i):
+        return self._bucket_list[i] is None
+
     def is_overflow(self):
         """
         when the bucket if full, check the last element's offset to check overflow
@@ -67,6 +79,14 @@ class Bucket:
         :return: the index where the hash_entry is stored if success, else -1
         """
         for i in range(self._bucket_size):
+            if self._bucket_list[i] is None:
+                self._bucket_list[i] = hash_entry
+                return i
+        return -1
+
+    def add_alien_hash_entry(self, hash_entry):
+        # last entry is reserved for local list head, and it must be a local entry
+        for i in range(self._bucket_size - 1):
             if self._bucket_list[i] is None:
                 self._bucket_list[i] = hash_entry
                 return i
