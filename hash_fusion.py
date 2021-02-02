@@ -78,8 +78,8 @@ class HashTable:
         """
         add the (world_coord, voxel) pair to the hash map
         """
-        hash_entry = he.HashEntry(world_coord, None, voxel)
-        self.add_hash_entry(hash_entry)
+        entry_to_add = he.HashEntry(world_coord, None, voxel)
+        self.add_hash_entry(entry_to_add)
 
     def add_hash_entry(self, hash_entry):
         """
@@ -210,8 +210,7 @@ class HashTable:
         remove the hash entry
         :return: 1 if remove done, 0 if remove failed
         """
-        hash_value = self.hash_function(hash_entry.get_position())
-        bucket = self.get_ith_bucket(hash_value)
+        bucket = self.get_ith_bucket(self.hash_function(hash_entry.get_position()))
         if bucket is None:
             return 0
         if bucket.is_empty():
@@ -306,19 +305,19 @@ class HashTable:
             if bucket is None:
                 continue
             else:
-                for i in range(self._bucket_size):
-                    entry = bucket.get_ith_entry(i)
-                    if entry is None:
+                for index in range(self._bucket_size):
+                    ith_entry = bucket.get_ith_entry(index)
+                    if ith_entry is None:
                         continue
                     else:
-                        self.add_hash_entry(entry)
+                        self.add_hash_entry(ith_entry)
         print("Resize finished.")
 
-    def _in_corresponding_bucket(self, hash_entry, bucket_index):
+    def _in_corresponding_bucket(self, target_entry, b_idx):
         """
         :return: True when hash entry's value is the index of the bucket, else False (it is pointed by an offset)
         """
-        return bucket_index == self.hash_function(hash_entry.get_position())
+        return b_idx == self.hash_function(target_entry.get_position())
 
 
 if __name__ == '__main__':
