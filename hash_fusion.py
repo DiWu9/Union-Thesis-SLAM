@@ -174,17 +174,20 @@ class HashTable:
             # iterate bucket
             for i in range(self._bucket_size):
                 entry = bucket.get_ith_entry(i)
-                if temp_hash_entry.equals(entry):
-                    return entry
-                if entry is not None:
-                    last_entry = entry
-            # iterate linked list
-            next_in_chain = last_entry
-            while not next_in_chain.is_empty_offset():
-                pointer = next_in_chain.get_offset()
-                next_in_chain = self._get_hash_entry(pointer[0], pointer[1])
-                if temp_hash_entry.equals(next_in_chain):
-                    return next_in_chain
+                if entry is None:
+                    continue
+                else:
+                    if temp_hash_entry.equals(entry):
+                        return entry
+            last_entry = bucket.get_ith_entry(self._bucket_size - 1)
+            if last_entry is not None:
+                # iterate linked list
+                next_in_chain = last_entry
+                while not next_in_chain.is_empty_offset():
+                    pointer = next_in_chain.get_offset()
+                    next_in_chain = self._get_hash_entry(pointer[0], pointer[1])
+                    if temp_hash_entry.equals(next_in_chain):
+                        return next_in_chain
         return None
 
     def _get_hash_entry(self, ith_bucket, ith_entry):

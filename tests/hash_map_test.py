@@ -1,9 +1,7 @@
 import unittest
 import numpy as np
 
-from data_structures import bucket as b
 from data_structures import hash_entry as he
-from data_structures import voxel as v
 import hash_fusion as hf
 
 
@@ -82,6 +80,28 @@ class TestHashMap(unittest.TestCase):
             hash_entry = he.HashEntry(position, None, None)
             hash_table.remove_hash_entry(hash_entry)
         self.assertEqual(0, hash_table.count_num_hash_entries())
+
+    def test_general(self):
+        hash_table = hf.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 10000,
+                                  False)
+        world_coords = []
+        for i in range(4*10000):
+            x = np.random.randint(500)
+            y = np.random.randint(500)
+            z = i
+            world_coords.append([x, y, z])
+            entry = he.HashEntry((x,y,z), None, None)
+            hash_table.add_hash_entry(entry)
+        self.assertEqual(4*10000, hash_table.count_num_hash_entries(), "test adding to maximum capacity")
+        for i in range(2*10000):
+            index = np.random.randint(len(world_coords) - 1)
+            position = world_coords[index]
+            world_coords.remove(position)
+            hash_table.remove(position)
+        self.assertEqual(2*10000, hash_table.count_num_hash_entries(), "test remove half of entries")
+        for remaining_position in world_coords:
+            self.assertIsNotNone(hash_table.get_hash_entry(remaining_position), "can still find the remaining half of "
+                                                                                "entries")
 
 
 if __name__ == '__main__':
