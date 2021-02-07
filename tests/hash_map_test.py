@@ -64,6 +64,15 @@ class TestHashMap(unittest.TestCase):
             hash_map.add_hash_entry(hash_entry)
         self.assertEqual(4000, hash_map.count_num_hash_entries(), "4000 entries are added")
 
+    def test_add_same_hash_value(self):
+        hash_map = hf.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 1000,
+                                False)
+        for i in range(4000):
+            hash_entry = he.HashEntry([0, 0, 0], None, None)
+            hash_map.hash_function([0, 0, 0])
+            hash_map.add_hash_entry(hash_entry)
+        self.assertEqual(4000, hash_map.count_num_hash_entries(), "4000 identical entries are added")
+
     def test_remove_all_entries_full_size_10(self):
         hash_table = hf.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 10,
                                   False)

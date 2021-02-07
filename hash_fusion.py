@@ -43,7 +43,7 @@ class HashTable:
         print("Number of buckets: {}".format(self._table_size))
         self._bucket_size = 5
 
-    def integrate(self):
+    def integrate(self, color_im, depth_im, cam_intr, cam_pose, obs_weight=1.):
         """
         Integrate a RGB-D image to the hash table
         :return:
