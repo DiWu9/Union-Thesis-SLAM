@@ -7,12 +7,17 @@ class HashEntry:
 
     def __init__(self, position, offset, voxel):
         """
-        world world_coord
-        offset pointer to handle collisions, stores a tuple (ith_bucket, ith_index)
-        pointer to the voxel block
+        position: voxel coordinate
+        offset: pointer to handle collisions, stores a tuple (ith_bucket, ith_index)
+        voxel: pointer to the voxel block
         """
         self._position = position
         self._offset = offset
+        self._voxel = voxel
+
+    def integrate_voxel(self, new_dist, new_color, obs_weight=1.):
+        voxel = self.get_voxel()
+        voxel.integrate(new_dist, new_color, obs_weight)
         self._voxel = voxel
 
     def set_offset(self, pointer):
