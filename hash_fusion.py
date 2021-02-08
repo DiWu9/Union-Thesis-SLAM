@@ -23,11 +23,12 @@ class HashTable:
     The data structure for voxel storage and retrieval: hash tables
     """
 
-    def __init__(self, vol_bounds, voxel_size, map_size=1000000, use_gpu=True):
+    def __init__(self, vol_bounds, voxel_size, map_size=1000000, load_factor=0.75, use_gpu=False):
         print("Initializing hash maps ... ")
         # hash map attributes
         self._table_size = map_size
         self._hash_table = [None] * self._table_size
+        self._load_factor = 0.75
         self._bucket_size = 5
 
         # set up constants
@@ -119,7 +120,7 @@ class HashTable:
         valid_vox_y = self.vox_coords[valid_pts, 1]
         valid_vox_z = self.vox_coords[valid_pts, 2]
         valid_dist = dist[valid_pts]
-        
+
         # integration step
         for i in range(len(valid_vox_x)):
             voxel_coord = [valid_vox_x[i], valid_vox_y[i], valid_vox_z[i]]
@@ -132,33 +133,6 @@ class HashTable:
             else:
                 target_entry.integrate_voxel(valid_dist[i], color_im[pix_y[i], pix_x[i]])
 
-    def get_valid_voxels(self, color_im, depth_im, cam_intr, cam_pose):
-        """
-        get all voxel coordinates to update
-        """
-        im_h, im_w = depth_im.shape
-        color_im = color_im.astyoe(np.float32)
-        color_im = np.floor(color_im[..., 2] * self._color_const + color_im[..., 1] * 256 + color_im[..., 0])
-        cam_pts = self.vox2world(self._vol_origin, self.vox_coords, self._voxel_size)
-        cam_pts = grid_fusion.rigid_transform(cam_pts, np.linalg.inv(cam_pose))
-        pix_z = cam_pts[:, 2]
-        pix = self.cam2pix(cam_pts, cam_intr)
-        pix_x, pix_y = pix[:, 0], pix[:, 1]
-        valid_pix = np.logical_and(pix_x >= 0,
-                    np.logical_and(pix_x < im_w,
-                    np.logical_and(pix_y >= 0,
-                    np.logical_and(pix_y < im_h,pix_z > 0))))
-        depth_val = np.zeros(pix_x.shape)
-        depth_val[valid_pix] = depth_im[pix_y[valid_pix], pix_x[valid_pix]]
-
-        depth_diff = depth_val - pix_z
-        valid_pts = np.logical_and(depth_val > 0, depth_diff >= -self._trunc_margin)
-        dist = np.minimum(1, depth_diff / self._trunc_margin)
-        valid_vox_x = self.vox_coords[valid_pts, 0]
-        valid_vox_y = self.vox_coords[valid_pts, 1]
-        valid_vox_z = self.vox_coords[valid_pts, 2]
-        return [[valid_vox_x[i], valid_vox_y[i], valid_vox_z[i]] for i in range(len(valid_vox_x))]
-
     def count_num_hash_entries(self):
         num_hash_entries = 0
         for bucket in self._hash_table:
@@ -167,6 +141,17 @@ class HashTable:
             else:
                 num_hash_entries += bucket.get_num_entry_stored()
         return num_hash_entries
+
+    def needs_resize(self):
+        """
+        compute load factor and compare it with max load factor
+        :returns: True if exceeds max load factor, else False
+        """
+        num_buckets = 0
+        for i in range(self._table_size):
+            if self.get_ith_bucket(i) is not None:
+                num_buckets += 1
+        return num_buckets / self._table_size >= self._load_factor
 
     def hash_function(self, world_coord):
         """
@@ -199,6 +184,8 @@ class HashTable:
         """
         if hash_entry is None:
             return -1, -1
+        if self.needs_resize():
+            self.double_table_size()
         hash_value = self.hash_function(hash_entry.get_position())
         bucket = self.get_ith_bucket(hash_value)
         if bucket is None:
@@ -375,6 +362,12 @@ class HashTable:
         bucket = self.get_ith_bucket(ith_bucket)
         if bucket is not None:
             bucket.remove_ith_entry(ith_entry)
+
+    def get_mesh(self):
+        return 0
+
+    def get_point_cloud(self):
+        return 0
 
     def set_ith_bucket(self, bucket, i):
         self._hash_table[i] = bucket
