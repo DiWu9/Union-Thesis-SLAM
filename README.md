@@ -47,7 +47,9 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 + test add, get, remove success
 + hash maps can store the maximum of (map_size)*(bucket_size - 1)
 
-#### 02/01/2021
-+ 
+#### 02/08/2021
++ Test adding entries of same value
++ Implement integration
 
-#### 02/02/2021
+#### 02/09/2021
++ Hash map integration can function with low efficiency
