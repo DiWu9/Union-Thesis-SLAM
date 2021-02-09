@@ -10,6 +10,12 @@ class Voxel:
         self._color = color # float32 in bgr
         self._weight = weight
 
+    def get_sdf(self):
+        return self._sdf
+
+    def get_color(self):
+        return self._color
+
     def integrate(self, new_dist, new_color, obs_weight=1.):
         """
         D’(v) = (D(v)W(v) + w_i(v)d_i(v)) / W(v) + w_i(v)

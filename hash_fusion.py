@@ -98,7 +98,7 @@ class HashTable:
         Integrate a RGB-D image to the hash table
         """
         im_h, im_w = depth_im.shape
-        color_im = color_im.astyoe(np.float32)
+        color_im = color_im.astype(np.float32)
         color_im = np.floor(color_im[..., 2] * self._color_const + color_im[..., 1] * 256 + color_im[..., 0])
         cam_pts = self.vox2world(self._vol_origin, self.vox_coords, self._voxel_size)
         cam_pts = grid_fusion.rigid_transform(cam_pts, np.linalg.inv(cam_pose))
@@ -119,6 +119,8 @@ class HashTable:
         valid_vox_x = self.vox_coords[valid_pts, 0]
         valid_vox_y = self.vox_coords[valid_pts, 1]
         valid_vox_z = self.vox_coords[valid_pts, 2]
+        valid_pix_x = pix_x[valid_pts]
+        valid_pix_y = pix_y[valid_pts]
         valid_dist = dist[valid_pts]
 
         # integration step
@@ -127,11 +129,11 @@ class HashTable:
             target_entry = self.get_hash_entry(voxel_coord)
             if target_entry is None:
                 voxel = v.Voxel()
-                voxel.integrate(valid_dist[i], color_im[pix_y[i], pix_x[i]])
+                voxel.integrate(valid_dist[i], color_im[valid_pix_y[i], valid_pix_x[i]])
                 entry = he.HashEntry(voxel_coord, None, voxel)
                 self.add_hash_entry(entry)
             else:
-                target_entry.integrate_voxel(valid_dist[i], color_im[pix_y[i], pix_x[i]])
+                target_entry.integrate_voxel(valid_dist[i], color_im[valid_pix_y[i], valid_pix_x[i]])
 
     def count_num_hash_entries(self):
         num_hash_entries = 0
@@ -363,11 +365,70 @@ class HashTable:
         if bucket is not None:
             bucket.remove_ith_entry(ith_entry)
 
+    def get_volume(self):
+        """
+        generate tsdf, color volume based on the hash map
+        :return: tsdf volume, color volume
+        """
+        tsdf_volume = np.ones(self._vol_dim).astype(np.float32)
+        color_volume = np.zeros(self._vol_dim).astype(np.float32)
+        for i in range(self._table_size):
+            bucket = self.get_ith_bucket(i)
+            for j in range(self._bucket_size):
+                entry = bucket.get_ith_entry(j)
+                if entry is not None:
+                    voxel = entry.get_voxel()
+                    if voxel is not None:
+                        sdf = voxel.get_sdf()
+                        color = voxel.get_color()
+                        position = entry.get_position()
+                        tsdf_volume[position[0], position[1], position[2]] = sdf
+                        color_volume[position[0], position[1], position[2]] = color
+        return tsdf_volume, color_volume
+
     def get_mesh(self):
-        return 0
+        """
+        source: https://github.com/andyzeng/tsdf-fusion-python
+        compute a mesh from the voxel volume using marching cubes
+        """
+        tsdf_volume, color_volume = self.get_volume()
+
+        # Marching cubes
+        verts, faces, norms, vals = measure.marching_cubes_lewiner(tsdf_volume, level=0)
+        verts_ind = np.round(verts).astype(int)
+        verts = verts * self._voxel_size + self._vol_origin  # voxel grid coordinates to world coordinates
+
+        # Get vertex colors
+        rgb_vals = color_volume[verts_ind[:, 0], verts_ind[:, 1], verts_ind[:, 2]]
+        colors_b = np.floor(rgb_vals / self._color_const)
+        colors_g = np.floor((rgb_vals - colors_b * self._color_const) / 256)
+        colors_r = rgb_vals - colors_b * self._color_const - colors_g * 256
+        colors = np.floor(np.asarray([colors_r, colors_g, colors_b])).T
+        colors = colors.astype(np.uint8)
+        return verts, faces, norms, colors
 
     def get_point_cloud(self):
-        return 0
+        """
+        source: https://github.com/andyzeng/tsdf-fusion-python
+        extract a point cloud from the voxel volume
+        """
+        tsdf_volume, color_volume = self.get_volume()
+
+        # Marching cubes
+        verts = measure.marching_cubes_lewiner(tsdf_volume, level=0)[0]
+        verts_ind = np.round(verts).astype(int)
+        verts = verts * self._voxel_size + self._vol_origin
+
+        # Get vertex colors
+        rgb_vals = color_volume[verts_ind[:, 0], verts_ind[:, 1], verts_ind[:, 2]]
+        colors_b = np.floor(rgb_vals / self._color_const)
+        colors_g = np.floor((rgb_vals - colors_b * self._color_const) / 256)
+        colors_r = rgb_vals - colors_b * self._color_const - colors_g * 256
+        colors = np.floor(np.asarray([colors_r, colors_g, colors_b])).T
+        colors = colors.astype(np.uint8)
+
+        pc = np.hstack([verts, colors])
+        return pc
 
     def set_ith_bucket(self, bucket, i):
         self._hash_table[i] = bucket

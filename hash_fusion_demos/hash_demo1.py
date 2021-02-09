@@ -1,6 +1,3 @@
-"""Fuse 1000 RGB-D images from the 7-scenes dataset into a TSDF voxel volume with 2cm resolution.
-"""
-
 import time
 
 import cv2
@@ -8,6 +5,7 @@ import numpy as np
 
 import grid_fusion
 import hash_fusion
+
 
 def main():
     print("Estimating voxel volume bounds...")
@@ -49,16 +47,14 @@ def main():
 
     # Get mesh from voxel volume and save to disk (can be viewed with Meshlab)
     print("Saving mesh to mesh.ply...")
-    verts, faces, norms, colors = tsdf_vol.get_mesh()
-    grid_fusion.meshwrite("mesh.ply", verts, faces, norms, colors)
+    verts, faces, norms, colors = hash_table.get_mesh()
+    grid_fusion.meshwrite("mesh_hash_demo1.ply", verts, faces, norms, colors)
 
     # Get point cloud from voxel volume and save to disk (can be viewed with Meshlab)
     print("Saving point cloud to pc.ply...")
-    point_cloud = tsdf_vol.get_point_cloud()
-    grid_fusion.pcwrite("pc.ply", point_cloud)
+    point_cloud = hash_table.get_point_cloud()
+    grid_fusion.pcwrite("pc_hash_demo1.ply", point_cloud)
+
 
 if __name__ == "__main__":
-    print("Estimating voxel volume bounds...")
-    n_imgs = 1000
-    cam_intr = np.loadtxt("../data/camera-intrinsics.txt", delimiter=' ')
-    vol_bnds = np.zeros((3, 2))
+    main()
