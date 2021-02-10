@@ -30,6 +30,7 @@ class HashTable:
         self._hash_table = [None] * self._table_size
         self._load_factor = 0.75
         self._bucket_size = 5
+        self._num_non_empty_bucket = 0
 
         # set up constants
         vol_bounds = np.asarray(vol_bounds)
@@ -125,6 +126,7 @@ class HashTable:
 
         # integration step
         for i in range(len(valid_vox_x)):
+            print(i)
             voxel_coord = [valid_vox_x[i], valid_vox_y[i], valid_vox_z[i]]
             target_entry = self.get_hash_entry(voxel_coord)
             if target_entry is None:
@@ -149,11 +151,7 @@ class HashTable:
         compute load factor and compare it with max load factor
         :returns: True if exceeds max load factor, else False
         """
-        num_buckets = 0
-        for i in range(self._table_size):
-            if self.get_ith_bucket(i) is not None:
-                num_buckets += 1
-        return num_buckets / self._table_size >= self._load_factor
+        return self._num_non_empty_bucket / self._table_size >= self._load_factor
 
     def hash_function(self, world_coord):
         """
@@ -186,6 +184,11 @@ class HashTable:
         """
         if hash_entry is None:
             return -1, -1
+        """
+        if self.needs_resize():
+            self.double_table_size()
+        
+        """
         if self.needs_resize():
             self.double_table_size()
         hash_value = self.hash_function(hash_entry.get_position())
@@ -194,6 +197,7 @@ class HashTable:
             bucket = b.Bucket(self._bucket_size)
             bucket.add_hash_entry(hash_entry)
             self.set_ith_bucket(bucket, hash_value)
+            self._num_non_empty_bucket += 1
             return hash_value, 0
         else:
             if bucket.is_full():
@@ -241,6 +245,7 @@ class HashTable:
                 bucket = b.Bucket(self._bucket_size)
                 bucket.add_hash_entry(add_entry)
                 self.set_ith_bucket(bucket, b_idx)
+                self._num_non_empty_bucket += 1
                 prev_entry.set_offset((b_idx, 0))
                 return b_idx, 0
             if bucket.is_full_for_alien_entries():
@@ -312,7 +317,8 @@ class HashTable:
         remove the hash entry
         :return: 1 if remove done, 0 if remove failed
         """
-        bucket = self.get_ith_bucket(self.hash_function(hash_entry.get_position()))
+        hash_value = self.hash_function(hash_entry.get_position())
+        bucket = self.get_ith_bucket(hash_value)
         if bucket is None:
             return 0
         if bucket.is_empty():
@@ -329,14 +335,18 @@ class HashTable:
                     if hash_entry.equals(element):
                         # 1a. if this hash entry is not in the linked list and has empty offset, simply remove it
                         if element.is_empty_offset():
+                            # when the bucket stores less than 1 entry, removing 1 entry makes the bucket empty
                             bucket.remove_ith_entry(i)
+                            if bucket.get_num_entry_stored() == 0:
+                                self.set_ith_bucket(None, hash_value)
+                                self._num_non_empty_bucket -= 1
                             return 1
                         # 1b. if last entry and has offset, set last entry to next element and delete next element
                         # if in corresponding bucket and has offset, then must be the last entry
                         else:
                             pointer = element.get_offset()
                             next_element = self._get_hash_entry(pointer[0], pointer[1])
-                            self._remove_hash_entry(pointer[0],pointer[1])
+                            self._remove_hash_entry(pointer[0], pointer[1])
                             bucket.set_ith_entry(next_element, i)
                             return 1
             # case2: hash entry is in the linked list
@@ -351,11 +361,10 @@ class HashTable:
                         # 2a. last element of list, remove it from hash table and remove current entry's offset
                         if next_pointer is None:
                             current_on_chain.set_offset(None)
-                            self._remove_hash_entry(pointer[0], pointer[1])
                         # 2b. middle of list, delete it and correct pointer of previous entry
                         else:
                             current_on_chain.set_offset(next_pointer)
-                            self._remove_hash_entry(pointer[0], pointer[1])
+                        self._remove_hash_entry(pointer[0], pointer[1])
                         return 1
                     current_on_chain = next_entry
             return 0
@@ -364,6 +373,70 @@ class HashTable:
         bucket = self.get_ith_bucket(ith_bucket)
         if bucket is not None:
             bucket.remove_ith_entry(ith_entry)
+            if bucket.get_num_entry_stored() == 0:
+                self.set_ith_bucket(None, ith_bucket)
+                self._num_non_empty_bucket -= 1
+
+    def set_ith_bucket(self, bucket, i):
+        self._hash_table[i] = bucket
+
+    def get_ith_bucket(self, i):
+        try:
+            return self._hash_table[i]
+        except IndexError:
+            print("hash_fusion.get_ith_bucket: invalid index")
+
+    def get_next_bucket(self, i):
+        """
+        :return: next bucket in the hash table. (the next bucket of the last bucket is the first bucket)
+        """
+        # check if i is the last bucket
+        if i >= self._table_size - 1:
+            return self._hash_table[0]
+        else:
+            return self._hash_table[i+1]
+
+    def _estimate_hash_table_size_by_voxel_grid_dimension(self, load_factor=0.75):
+        """
+        estimate the number of buckets needed by the hash table
+        """
+        # 10 is a magic number and it needs to be tested
+        num_points_estimate = self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2] / 10
+        return num_points_estimate / load_factor
+
+    def double_table_size(self):
+        """
+        resize the hash table to accommodate more hash entries within load factor of 0.75
+        """
+        print("Resizing hash table from {} to {}".format(self._table_size, self._table_size * 2))
+
+        original_hash_table = self._hash_table
+
+        # create the new hash table and fill all hash entries in
+        self._table_size = self._table_size * 2
+        self._hash_table = [None] * self._table_size
+        self._num_non_empty_bucket = 0
+        for bucket in original_hash_table:
+            if bucket is None:
+                continue
+            else:
+                for index in range(self._bucket_size):
+                    ith_entry = bucket.get_ith_entry(index)
+                    if ith_entry is None:
+                        continue
+                    else:
+                        ith_entry.set_offset(None)
+                        self.add_hash_entry(ith_entry)
+        print("Resize finished.")
+
+    def _in_corresponding_bucket(self, target_entry, b_idx):
+        """
+        :return: True when hash entry's value is the index of the bucket, else False (it is pointed by an offset)
+        """
+        return b_idx == self.hash_function(target_entry.get_position())
+
+    def get_num_non_empty_buckets(self):
+        return self._num_non_empty_bucket
 
     def get_volume(self):
         """
@@ -429,62 +502,6 @@ class HashTable:
 
         pc = np.hstack([verts, colors])
         return pc
-
-    def set_ith_bucket(self, bucket, i):
-        self._hash_table[i] = bucket
-
-    def get_ith_bucket(self, i):
-        try:
-            return self._hash_table[i]
-        except IndexError:
-            print("hash_fusion.get_ith_bucket: invalid index")
-
-    def get_next_bucket(self, i):
-        """
-        :return: next bucket in the hash table. (the next bucket of the last bucket is the first bucket)
-        """
-        # check if i is the last bucket
-        if i >= self._table_size - 1:
-            return self._hash_table[0]
-        else:
-            return self._hash_table[i+1]
-
-    def _estimate_hash_table_size_by_voxel_grid_dimension(self, load_factor=0.75):
-        """
-        estimate the number of buckets needed by the hash table
-        """
-        # 10 is a magic number and it needs to be tested
-        num_points_estimate = self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2] / 10
-        return num_points_estimate / load_factor
-
-    def double_table_size(self):
-        """
-        resize the hash table to accommodate more hash entries within load factor of 0.75
-        """
-        print("Resizing hash table from {} to {}".format(self._table_size, self._table_size * 2))
-
-        original_hash_table = self._hash_table
-
-        # create the new hash table and fill all hash entries in
-        self._table_size = self._table_size * 2
-        self._hash_table = [None] * self._table_size
-        for bucket in original_hash_table:
-            if bucket is None:
-                continue
-            else:
-                for index in range(self._bucket_size):
-                    ith_entry = bucket.get_ith_entry(index)
-                    if ith_entry is None:
-                        continue
-                    else:
-                        self.add_hash_entry(ith_entry)
-        print("Resize finished.")
-
-    def _in_corresponding_bucket(self, target_entry, b_idx):
-        """
-        :return: True when hash entry's value is the index of the bucket, else False (it is pointed by an offset)
-        """
-        return b_idx == self.hash_function(target_entry.get_position())
 
 
 if __name__ == '__main__':

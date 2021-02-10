@@ -50,11 +50,12 @@ class TestHashMap(unittest.TestCase):
         for position in world_coords:
             hash_entry = he.HashEntry(position, None, None)
             hash_table.add_hash_entry(hash_entry)
+        # self.assertEqual(10, hash_table.get_num_non_empty_buckets(), "no buckets should be empty")
         self.assertEqual(40, hash_table.count_num_hash_entries())
 
     def test_add_until_full_size_1000(self):
         hash_map = hf.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 1000, False)
-        for i in range(4000):
+        for i in range(4500):
             x = np.random.randint(500)
             y = np.random.randint(500)
             z = i
@@ -62,7 +63,7 @@ class TestHashMap(unittest.TestCase):
             hash_entry = he.HashEntry(position, None, None)
             hash_map.hash_function(position)
             hash_map.add_hash_entry(hash_entry)
-        self.assertEqual(4000, hash_map.count_num_hash_entries(), "4000 entries are added")
+        self.assertEqual(4500, hash_map.count_num_hash_entries(), "4000 entries are added")
 
     def test_add_same_hash_value(self):
         hash_map = hf.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 1000,
@@ -88,6 +89,7 @@ class TestHashMap(unittest.TestCase):
         for position in world_coords:
             hash_entry = he.HashEntry(position, None, None)
             hash_table.remove_hash_entry(hash_entry)
+        self.assertEqual(0, hash_table.get_num_non_empty_buckets())
         self.assertEqual(0, hash_table.count_num_hash_entries())
 
     def test_general(self):
@@ -111,6 +113,14 @@ class TestHashMap(unittest.TestCase):
         for remaining_position in world_coords:
             self.assertIsNotNone(hash_table.get_hash_entry(remaining_position), "can still find the remaining half of "
                                                                                 "entries")
+        for i in range(2*10000):
+            x = np.random.randint(500)
+            y = np.random.randint(500) + 501
+            z = i
+            world_coords.append([x, y, z])
+            entry = he.HashEntry((x, y, z), None, None)
+            hash_table.add_hash_entry(entry)
+        self.assertEqual(4*10000, hash_table.count_num_hash_entries(), "adding to max capacity again")
 
 
 if __name__ == '__main__':
