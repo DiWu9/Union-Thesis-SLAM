@@ -1,4 +1,5 @@
 import numpy as np
+import cProfile
 from numba import njit, prange
 from skimage import measure
 
@@ -126,7 +127,7 @@ class HashTable:
 
         # integration step
         for i in range(len(valid_vox_x)):
-            print(i)
+            # print(i)
             voxel_coord = [valid_vox_x[i], valid_vox_y[i], valid_vox_z[i]]
             target_entry = self.get_hash_entry(voxel_coord)
             if target_entry is None:

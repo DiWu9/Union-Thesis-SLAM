@@ -55,4 +55,7 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 + Hash map integration can function with low efficiency
 
 #### 02/10/2021
-+ Optimize need resize and resize (O(n) -> O(1)
++ Optimize need resize and resize (O(n) -> O(1))
+
+#### 02/12/2021
++ Add one-frame profiling and ten-file profiling for runtime analysis
