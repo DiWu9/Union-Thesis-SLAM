@@ -59,3 +59,9 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 
 #### 02/12/2021
 + Add one-frame profiling and ten-frame profiling for runtime analysis
+
+#### 02/14/2021
++ Function optimization
+    + get_hash_entry(): Avoid making temp entry for comparison by directly match the correct entry by position
+    + hash_function(): Extract constant out to avoid time wasted on variable initializations
++ Add timer in both demos for runtime analysis
