@@ -18,6 +18,10 @@ except Exception as err:
     print('Failed to import PyCUDA. Running fusion in CPU mode.')
     FUSION_GPU_MODE = 0
 
+P1 = 73856093
+P2 = 19349669
+P3 = 83492791
+
 
 class HashTable:
     """
@@ -181,9 +185,8 @@ class HashTable:
         :param world_coord: world coordinate (x,y,z) in np array
         :return: the hash key of the voxel
         """
-        p1, p2, p3 = 73856093, 19349669, 83492791
         x, y, z = world_coord[0], world_coord[1], world_coord[2]
-        return np.remainder(np.bitwise_xor(np.bitwise_xor(x * p1, y * p2), z * p3), self._table_size)
+        return np.remainder(np.bitwise_xor(np.bitwise_xor(x * P1, y * P2), z * P3), self._table_size)
 
     def add_voxel(self, voxel, world_coord):
         """
