@@ -203,15 +203,13 @@ class HashTable:
         """
         if hash_entry is None:
             return -1, -1
-        """
+
         if self.needs_resize():
             self.double_table_size()
-        
-        """
-        if self.needs_resize():
-            self.double_table_size()
+
         hash_value = self.hash_function(hash_entry.get_position())
         bucket = self.get_ith_bucket(hash_value)
+
         if bucket is None:
             bucket = b.Bucket(self._bucket_size)
             bucket.add_hash_entry(hash_entry)
@@ -287,30 +285,27 @@ class HashTable:
         """
         get hash entry by its world coordinate
         """
-        hash_value = self.hash_function(world_coord)
-        temp_hash_entry = he.HashEntry(world_coord, None, None)
-        bucket = self.get_ith_bucket(hash_value)
+        bucket = self.get_ith_bucket(self.hash_function(world_coord))
         if bucket is not None:
             if bucket.is_empty():
                 return None
-            last_entry = None
-            # iterate bucket
-            for i in range(self._bucket_size):
-                entry = bucket.get_ith_entry(i)
-                if entry is None:
-                    continue
-                else:
-                    if temp_hash_entry.equals(entry):
-                        return entry
-            last_entry = bucket.get_ith_entry(self._bucket_size - 1)
-            if last_entry is not None:
-                # iterate linked list
-                next_in_chain = last_entry
-                while not next_in_chain.is_empty_offset():
-                    pointer = next_in_chain.get_offset()
+            target_entry = bucket.get_hash_entry(world_coord)
+            if target_entry is None:
+                if bucket.is_overflow():
+                    last_entry = bucket.get_ith_entry(self._bucket_size - 1)
+                    # iterate linked list
+                    pointer = last_entry.get_offset()
                     next_in_chain = self._get_hash_entry(pointer[0], pointer[1])
-                    if temp_hash_entry.equals(next_in_chain):
-                        return next_in_chain
+                    while True:
+                        if next_in_chain.match_position(world_coord):
+                            return next_in_chain
+                        pointer = next_in_chain.get_offset()
+                        if pointer is None:  # reach the last element of the list
+                            break
+                        else:
+                            next_in_chain = self._get_hash_entry(pointer[0], pointer[1])
+            else:
+                return target_entry
         return None
 
     def _get_hash_entry(self, ith_bucket, ith_entry):
@@ -439,12 +434,6 @@ class HashTable:
                         ith_entry.set_offset(None)
                         self.add_hash_entry(ith_entry)
         print("Resize finished.")
-
-    def _in_corresponding_bucket(self, target_entry, b_idx):
-        """
-        :return: True when hash entry's value is the index of the bucket, else False (it is pointed by an offset)
-        """
-        return b_idx == self.hash_function(target_entry.get_position())
 
     def get_num_non_empty_buckets(self):
         return self._num_non_empty_bucket

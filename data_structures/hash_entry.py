@@ -41,6 +41,9 @@ class HashEntry:
     def equals(self, hash_entry):
         return np.array_equal(self._position, hash_entry.get_position())
 
+    def match_position(self, position):
+        return np.array_equal(self._position, position)
+
 
 if __name__ == '__main__':
     print("Test hash entry")

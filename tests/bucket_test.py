@@ -32,10 +32,10 @@ class TestBucket(unittest.TestCase):
         self.assertFalse(bucket.is_overflow())
         entry = bucket.get_ith_entry(-1)
         entry.set_offset((2,3))
-        self.assertTrue(bucket.is_overflow(), "full bucket + one non-empty offset = overflow")
+        self.assertTrue(bucket.is_overflow(), "last entry has non-empty offset = overflow")
         bucket.remove_hash_entry(np.array([4, 4, 3]))
         self.assertEqual(bucket.get_num_entry_stored(), 4, "current number of entries is 4")
-        self.assertFalse(bucket.is_overflow(), "overflow only occurs when bucket is full")
+        self.assertTrue(bucket.is_overflow(), "overflow can occur even if the bucket is not full")
 
     def test_add(self):
         bucket = b.Bucket(5)

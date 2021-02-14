@@ -48,13 +48,11 @@ class Bucket:
         """
         when the bucket if full, check the last element's offset to check overflow
         """
-        if self.is_full():
-            for hash_entry in self._bucket_list:
-                if not hash_entry.is_empty_offset():
-                    return True
+        last_entry = self._bucket_list[self._bucket_size - 1]
+        if last_entry is None:
             return False
         else:
-            return False
+            return not last_entry.is_empty_offset()
 
     def is_empty(self):
         """
@@ -96,11 +94,11 @@ class Bucket:
         """
         :return: None if the hash entry is not found in the bucket
         """
-        temp_entry = he.HashEntry(world_coord, None, None)
-        if self.contains(temp_entry):
-            for bucket_entry in self._bucket_list:
-                if bucket_entry.equals(temp_entry):
-                    return bucket_entry
+        if not self.is_empty():
+            for entry in self._bucket_list:
+                if entry is not None:
+                    if entry.match_position(world_coord):
+                        return entry
         return None
 
     def remove_hash_entry(self, world_coord):
