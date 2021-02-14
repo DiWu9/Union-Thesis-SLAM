@@ -58,4 +58,4 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 + Optimize need resize and resize (O(n) -> O(1))
 
 #### 02/12/2021
-+ Add one-frame profiling and ten-file profiling for runtime analysis
++ Add one-frame profiling and ten-frame profiling for runtime analysis

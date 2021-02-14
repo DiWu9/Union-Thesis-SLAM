@@ -154,6 +154,25 @@ class HashTable:
         """
         return self._num_non_empty_bucket / self._table_size >= self._load_factor
 
+    def get_num_non_empty_bucket(self):
+        return self._num_non_empty_bucket
+
+    def get_load_factor(self):
+        return self._num_non_empty_bucket / self._table_size
+
+    def get_num_collisions(self):
+        """
+        get number of buckets that have more than one entry (collision)
+        """
+        num_collisions = 0
+        for i in range(self._table_size):
+            bucket = self.get_ith_bucket(i)
+            if bucket is None:
+                continue
+            if bucket.get_num_entry_stored() > 1:
+                num_collisions += 1
+        return num_collisions
+
     def hash_function(self, world_coord):
         """
         generate the hash key of the given voxel and hash function:
@@ -163,12 +182,8 @@ class HashTable:
         :return: the hash key of the voxel
         """
         p1, p2, p3 = 73856093, 19349669, 83492791
-
-        try:
-            x, y, z = world_coord[0], world_coord[1], world_coord[2]
-            return np.remainder(np.bitwise_xor(np.bitwise_xor(x * p1, y * p2), z * p3), self._table_size)
-        except IndexError:
-            print("hash_fusion.hash_function: invalid world_coord input.")
+        x, y, z = world_coord[0], world_coord[1], world_coord[2]
+        return np.remainder(np.bitwise_xor(np.bitwise_xor(x * p1, y * p2), z * p3), self._table_size)
 
     def add_voxel(self, voxel, world_coord):
         """
@@ -397,14 +412,6 @@ class HashTable:
         else:
             return self._hash_table[i+1]
 
-    def _estimate_hash_table_size_by_voxel_grid_dimension(self, load_factor=0.75):
-        """
-        estimate the number of buckets needed by the hash table
-        """
-        # 10 is a magic number and it needs to be tested
-        num_points_estimate = self._vol_dim[0] * self._vol_dim[1] * self._vol_dim[2] / 10
-        return num_points_estimate / load_factor
-
     def double_table_size(self):
         """
         resize the hash table to accommodate more hash entries within load factor of 0.75
@@ -506,8 +513,8 @@ class HashTable:
 
 
 if __name__ == '__main__':
-    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 100000, False)
     world_coords = []
+    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 100000, False)
     for i in range(400000):
         x = np.random.randint(50)
         y = np.random.randint(50)
@@ -520,9 +527,3 @@ if __name__ == '__main__':
         print("Point {} of hash value {} is added to ({},{})".format(position, hash_value, bucket_index, entry_index))
     print(hash_map.count_num_hash_entries())
     print("Test add finished")
-
-    for position in world_coords:
-        entry = he.HashEntry(position, None, None)
-        hash_map.remove_hash_entry(entry)
-    print(hash_map.count_num_hash_entries())
-    print("Test remove finished")

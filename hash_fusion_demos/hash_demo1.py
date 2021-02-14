@@ -45,7 +45,7 @@ def ten_frame_profiling():
         view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
         vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
         vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
-    hash_table = hash_fusion.HashTable(vol_bnds, voxel_size=0.02)
+    hash_table = hash_fusion.HashTable(vol_bnds, voxel_size=0.02, map_size=100000)
 
     # Loop through the first 10 RGB-D images and fuse them together
     for i in range(10):
@@ -55,6 +55,13 @@ def ten_frame_profiling():
         depth_im[depth_im == 65.535] = 0
         cam_pose = np.loadtxt("../data/frame-%06d.pose.txt" % (i))
         hash_table.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
+        print("Frame {}: num occupied buckets: {}; load factor: {}; collisions: {}; collision rate: {}".format(
+            i + 1,
+            hash_table.get_num_non_empty_bucket(),
+            hash_table.get_load_factor(),
+            hash_table.get_num_collisions(),
+            hash_table.get_num_collisions() / hash_table.get_num_non_empty_bucket()
+        ))
 
 
 def main():
@@ -106,18 +113,31 @@ def main():
     grid_fusion.pcwrite("pc_hash_demo1.ply", point_cloud)
 
 
+def test_hash_function():
+    positions = [[333, 234, 241], [342, 234, 241], [332, 234, 242]]
+    hash_map = hash_fusion.HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02,
+                                     100000, False)
+    for position in positions:
+        hash_value = hash_map.hash_function(position)
+        print(hash_value)
+
+
 def profile_function_write_file(function_name, filename):
     cProfile.run(function_name, filename)
 
 
 def read_profile_file(filename, top_n_functions):
     p = pstats.Stats(filename)
-    p.sort_stats(SortKey.CUMULATIVE).print_stats(top_n_functions)
+    p.sort_stats(SortKey.TIME).print_stats(top_n_functions)
 
 
 if __name__ == "__main__":
-    # profile_function_write_file('one_frame_profiling()', 'stats_one_frame')
-    # profile_function_write_file('ten_frame_profiling()', 'stats_ten_frame')
-    read_profile_file('stats_one_frame', 20)
-    read_profile_file('stats_ten_frame', 20)
+    profile_function_write_file('test_hash_function()', 'cProfile/stats_hash_function')
+    read_profile_file('cProfile/stats_hash_function', 10)
+    # profile_function_write_file('one_frame_profiling()', 'cProfile/stats_one_frame')
+    # profile_function_write_file('ten_frame_profiling()', 'cProfile/stats_ten_frame')
+    # one_frame_profiling()
+    # read_profile_file('cProfile/stats_one_frame', 20)
+    # read_profile_file('cProfile/stats_ten_frame', 20)
     # main()
+    # ten_frame_profiling()
