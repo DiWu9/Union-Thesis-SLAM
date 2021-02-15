@@ -447,6 +447,8 @@ class HashTable:
         color_volume = np.zeros(self._vol_dim).astype(np.float32)
         for i in range(self._table_size):
             bucket = self.get_ith_bucket(i)
+            if bucket is None:
+                continue
             for j in range(self._bucket_size):
                 entry = bucket.get_ith_entry(j)
                 if entry is not None:
@@ -506,7 +508,7 @@ class HashTable:
 
 if __name__ == '__main__':
     world_coords = []
-    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 100000, False)
+    hash_map = HashTable([[-4.22106438, 3.86798203], [-2.6663104, 2.60146141], [0., 5.76272371]], 0.02, 1000000, False)
     for i in range(400000):
         x = np.random.randint(50)
         y = np.random.randint(50)
