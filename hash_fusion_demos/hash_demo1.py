@@ -96,7 +96,7 @@ def main():
         vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
 
     print("Initializing hash table...")
-    hash_table = hash_fusion.HashTable(vol_bnds, voxel_size=0.02)
+    hash_table = hash_fusion.HashTable(vol_bnds, voxel_size=0.02, map_size=2000000)
 
     # Loop through RGB-D images and fuse them together
     t0_elapse = time.time()
