@@ -7,7 +7,7 @@ class Voxel:
 
     def __init__(self, sdf=1, color=0, weight=0):
         self._sdf = sdf
-        self._color = color # float32 in bgr
+        self._color = color  # float32 in bgr
         self._weight = weight
 
     def get_sdf(self):
@@ -36,11 +36,11 @@ class Voxel:
         self._weight = w_new
         self._sdf = d_new
 
-        old_b = self._color / BLUE_CONST
-        old_g = (self._color - old_b * BLUE_CONST) / GREEN_CONST
+        old_b = np.floor(self._color / BLUE_CONST)
+        old_g = np.floor((self._color - old_b * BLUE_CONST) / GREEN_CONST)
         old_r = self._color - old_b * BLUE_CONST - old_g * GREEN_CONST
-        new_b = new_color / BLUE_CONST
-        new_g = (new_color - new_b * BLUE_CONST) / GREEN_CONST
+        new_b = np.floor(new_color / BLUE_CONST)
+        new_g = np.floor((new_color - new_b * BLUE_CONST) / GREEN_CONST)
         new_r = new_color - new_b * BLUE_CONST - new_g * GREEN_CONST
         new_b = np.minimum(255., np.round((w_old * old_b + obs_weight * new_b) / w_new))
         new_g = np.minimum(255., np.round((w_old * old_g + obs_weight * new_g) / w_new))

@@ -76,6 +76,13 @@ def ten_frame_profiling():
             hash_table.get_num_collisions() / hash_table.get_num_non_empty_bucket()
         ))
         """
+    verts, faces, norms, colors = hash_table.get_mesh()
+    grid_fusion.meshwrite("mesh_hash_demo1.ply", verts, faces, norms, colors)
+
+    # Get point cloud from voxel volume and save to disk (can be viewed with Meshlab)
+    print("Saving point cloud to pc.ply...")
+    point_cloud = hash_table.get_point_cloud()
+    grid_fusion.pcwrite("pc_hash_demo1.ply", point_cloud)
 
 
 def main():
