@@ -158,7 +158,7 @@ def read_profile_file(filename, top_n_functions):
 
 def profile_main():
     graphviz = GraphvizOutput()
-    graphviz.output_file = 'hash_fusion_profiling.png'
+    graphviz.output_file = 'hash_fusion_profiling_voxel_integrate_beta.png'
     with PyCallGraph(output=graphviz):
         one_frame_profiling()
 

@@ -42,10 +42,11 @@ class Voxel:
         new_b = np.floor(new_color / BLUE_CONST)
         new_g = np.floor((new_color - new_b * BLUE_CONST) / GREEN_CONST)
         new_r = new_color - new_b * BLUE_CONST - new_g * GREEN_CONST
-        new_b = np.minimum(255., np.round((w_old * old_b + obs_weight * new_b) / w_new))
-        new_g = np.minimum(255., np.round((w_old * old_g + obs_weight * new_g) / w_new))
-        new_r = np.minimum(255., np.round((w_old * old_r + obs_weight * new_r) / w_new))
-        self._color = new_b * BLUE_CONST + new_g * GREEN_CONST + new_r
+        new_bgr_array = np.minimum(255., np.round(
+            [(w_old * old_b + obs_weight * new_b) / w_new,  # blue
+             (w_old * old_g + obs_weight * new_g) / w_new,  # green
+             (w_old * old_r + obs_weight * new_r) / w_new]))  # red
+        self._color = new_bgr_array[0] * BLUE_CONST + new_bgr_array[1] * GREEN_CONST + new_bgr_array[2]
 
 
 if __name__ == '__main__':
