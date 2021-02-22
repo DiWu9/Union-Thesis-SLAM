@@ -3,6 +3,7 @@ import numpy as np
 BLUE_CONST = 256 * 256
 GREEN_CONST = 256
 
+
 class Voxel:
 
     def __init__(self, sdf=1, color=0, weight=0):
@@ -45,7 +46,8 @@ class Voxel:
         new_bgr_array = np.minimum(255., np.round(
             [(w_old * old_b + obs_weight * new_b) / w_new,  # blue
              (w_old * old_g + obs_weight * new_g) / w_new,  # green
-             (w_old * old_r + obs_weight * new_r) / w_new]))  # red
+             (w_old * old_r + obs_weight * new_r) / w_new]  # red
+        ))
         self._color = new_bgr_array[0] * BLUE_CONST + new_bgr_array[1] * GREEN_CONST + new_bgr_array[2]
 
 

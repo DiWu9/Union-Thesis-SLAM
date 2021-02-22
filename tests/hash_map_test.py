@@ -89,7 +89,7 @@ class TestHashMap(unittest.TestCase):
         for position in world_coords:
             hash_entry = he.HashEntry(position, None, None)
             hash_table.remove_hash_entry(hash_entry)
-        self.assertEqual(0, hash_table.get_num_non_empty_buckets())
+        self.assertEqual(0, hash_table.get_num_non_empty_bucket())
         self.assertEqual(0, hash_table.count_num_hash_entries())
 
     def test_general(self):
@@ -97,8 +97,8 @@ class TestHashMap(unittest.TestCase):
                                   False)
         world_coords = []
         for i in range(4*10000):
-            x = np.random.randint(500)
-            y = np.random.randint(500)
+            x = i
+            y = i
             z = i
             world_coords.append([x, y, z])
             entry = he.HashEntry((x,y,z), None, None)
