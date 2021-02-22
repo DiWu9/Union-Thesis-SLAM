@@ -11,6 +11,10 @@ import cProfile
 import pstats
 from pstats import SortKey
 
+from pycallgraph import PyCallGraph
+from pycallgraph.output import GraphvizOutput
+
+
 
 def one_frame_profiling():
     n_imgs = 1000
@@ -152,6 +156,13 @@ def read_profile_file(filename, top_n_functions):
     p.sort_stats(SortKey.TIME).print_stats(top_n_functions)
 
 
+def profile_main():
+    graphviz = GraphvizOutput()
+    graphviz.output_file = 'hash_fusion_profiling.png'
+    with PyCallGraph(output=graphviz):
+        one_frame_profiling()
+
+
 if __name__ == "__main__":
     # profile_function_write_file('test_hash_function()', 'cProfile/stats_hash_function')
     # read_profile_file('cProfile/stats_hash_function', 10)
@@ -160,5 +171,6 @@ if __name__ == "__main__":
     # one_frame_profiling()
     # read_profile_file('cProfile/stats_one_frame', 20)
     # read_profile_file('cProfile/stats_ten_frame', 20)
-    main()
-    # ten_frame_profiling()
+    # main()
+    profile_main()
+

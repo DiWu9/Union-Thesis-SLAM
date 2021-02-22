@@ -14,8 +14,11 @@ try:
     from pycuda.compiler import SourceModule
     FUSION_GPU_MODE = 1
 except Exception as err:
+    """
     print('Warning: {}'.format(err))
     print('Failed to import PyCUDA. Running fusion in CPU mode.')
+    
+    """
     FUSION_GPU_MODE = 0
 
 P1 = 73856093
@@ -29,7 +32,6 @@ class HashTable:
     """
 
     def __init__(self, vol_bounds, voxel_size, map_size=1000000, load_factor=0.75, use_gpu=False):
-        print("Initializing hash maps ... ")
         # hash map attributes
         self._table_size = map_size
         self._hash_table = [None] * self._table_size
