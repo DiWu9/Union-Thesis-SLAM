@@ -143,13 +143,6 @@ class HashTable:
             else:
                 target_entry.integrate_voxel(valid_dist[i], color_im[valid_pix_y[i], valid_pix_x[i]])
 
-    def count_num_hash_entries(self):
-        num_hash_entries = 0
-        for entry in self._hash_table:
-            if entry is not None:
-                num_hash_entries += 1
-        return num_hash_entries
-
     def needs_resize(self):
         """
         compute load factor and compare it with max load factor
@@ -175,8 +168,12 @@ class HashTable:
             np.bitwise_xor(np.bitwise_xor(world_coord[0] * P1, world_coord[1] * P2), world_coord[2] * P3),
             self._table_size)
 
-    def is_empty(self, bucket):
-        return np.array_equal(bucket, [None] * self._bucket_size)
+    def count_num_hash_entries(self):
+        count = 0
+        for entry in self._hash_table:
+            if entry is not None:
+                count += 1
+        return count
 
     @staticmethod
     def count_num_entries(bucket):
@@ -207,7 +204,7 @@ class HashTable:
         ith_bucket = self.hash_function(hash_entry.get_position())
         bucket = self.get_ith_bucket(ith_bucket)
 
-        if self.is_empty(bucket):
+        if bucket is None:
             global_index = ith_bucket * self._bucket_size
             self._hash_table[global_index] = hash_entry
             self._num_non_empty_bucket += 1
@@ -257,7 +254,7 @@ class HashTable:
             # set index to next bucket's index
             b_idx = 0 if b_idx >= self._table_size - 1 else b_idx + 1
             bucket = self.get_ith_bucket(b_idx)
-            if self.is_empty(bucket):
+            if bucket is None:
                 global_index_to_add = b_idx * self._bucket_size
                 self._hash_table[global_index_to_add] = add_entry
                 self._num_non_empty_bucket += 1
@@ -296,7 +293,7 @@ class HashTable:
         get hash entry by its world coordinate
         """
         bucket = self.get_ith_bucket(self.hash_function(world_coord))
-        if self.is_empty(bucket):
+        if bucket is None:
             return None
         for entry in bucket:
             if entry is not None:
@@ -328,11 +325,9 @@ class HashTable:
         remove the hash entry in the given world coordinate
         :return: 1 if remove done, 0 if remove failed
         """
-        if world_coord == [30623, 30623, 30623]:
-            a = 1
         ith_bucket = self.hash_function(world_coord)
         bucket = self.get_ith_bucket(ith_bucket)
-        if self.is_empty(bucket):
+        if bucket is None:
             return 0
         else:
             for i in range(self._bucket_size):
@@ -385,7 +380,7 @@ class HashTable:
         self._hash_table[global_i] = None
         ith_bucket = np.floor_divide(global_i, self._bucket_size)
         bucket = self.get_ith_bucket(ith_bucket)
-        if self.count_num_entries(bucket) == 0:
+        if bucket is None:
             self._num_non_empty_bucket -= 1
 
     def get_ith_bucket(self, i):
@@ -394,7 +389,7 @@ class HashTable:
         for local_index in range(self._bucket_size):
             global_index = bi + local_index
             bucket.append(self._hash_table[global_index])
-        return bucket
+        return None if bucket == [None, None, None, None, None] else bucket
 
     def double_table_size(self):
         """
@@ -431,7 +426,7 @@ class HashTable:
             if bucket is None:
                 continue
             for j in range(self._bucket_size):
-                entry = bucket.get_ith_entry(j)
+                entry = bucket[j]
                 if entry is not None:
                     voxel = entry.get_voxel()
                     if voxel is not None:
