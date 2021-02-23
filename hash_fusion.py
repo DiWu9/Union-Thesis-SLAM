@@ -421,20 +421,18 @@ class HashTable:
         """
         tsdf_volume = np.ones(self._vol_dim).astype(np.float32)
         color_volume = np.zeros(self._vol_dim).astype(np.float32)
-        for i in range(self._table_size):
-            bucket = self.get_ith_bucket(i)
-            if bucket is None:
+        for i in range(self._table_size * self._bucket_size):
+            entry = self._hash_table[i]
+            if entry is None:
                 continue
-            for j in range(self._bucket_size):
-                entry = bucket[j]
-                if entry is not None:
-                    voxel = entry.get_voxel()
-                    if voxel is not None:
-                        sdf = voxel.get_sdf()
-                        color = voxel.get_color()
-                        position = entry.get_position()
-                        tsdf_volume[position[0], position[1], position[2]] = sdf
-                        color_volume[position[0], position[1], position[2]] = color
+            else:
+                voxel = entry.get_voxel()
+                if voxel is not None:
+                    sdf = voxel.get_sdf()
+                    color = voxel.get_color()
+                    position = entry.get_position()
+                    tsdf_volume[position[0], position[1], position[2]] = sdf
+                    color_volume[position[0], position[1], position[2]] = color
         return tsdf_volume, color_volume
 
     def get_mesh(self):
