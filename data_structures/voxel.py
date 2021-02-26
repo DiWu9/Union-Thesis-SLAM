@@ -37,17 +37,17 @@ class Voxel:
         self._weight = w_new
         self._sdf = d_new
 
-        old_b = np.floor(self._color / BLUE_CONST)
-        old_g = np.floor((self._color - old_b * BLUE_CONST) / GREEN_CONST)
+        old_b = self._color // BLUE_CONST
+        old_g = (self._color - old_b * BLUE_CONST) // GREEN_CONST
         old_r = self._color - old_b * BLUE_CONST - old_g * GREEN_CONST
         new_b = np.floor(new_color / BLUE_CONST)
         new_g = np.floor((new_color - new_b * BLUE_CONST) / GREEN_CONST)
         new_r = new_color - new_b * BLUE_CONST - new_g * GREEN_CONST
-        new_bgr_array = np.minimum(255., np.round(
-            [(w_old * old_b + obs_weight * new_b) / w_new,  # blue
-             (w_old * old_g + obs_weight * new_g) / w_new,  # green
-             (w_old * old_r + obs_weight * new_r) / w_new]  # red
-        ))
+        new_bgr_array = np.minimum(255.,
+            [(w_old * old_b + obs_weight * new_b) // w_new,  # blue
+             (w_old * old_g + obs_weight * new_g) // w_new,  # green
+             (w_old * old_r + obs_weight * new_r) // w_new]  # red
+        )
         self._color = new_bgr_array[0] * BLUE_CONST + new_bgr_array[1] * GREEN_CONST + new_bgr_array[2]
 
 

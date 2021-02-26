@@ -101,5 +101,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # ten_frame_profiling()
-    main()
+    ten_frame_profiling()
+    # main()
