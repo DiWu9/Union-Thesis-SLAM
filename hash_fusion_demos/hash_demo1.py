@@ -133,7 +133,6 @@ def main():
     grid_fusion.meshwrite("mesh_hash_demo1.ply", verts, faces, norms, colors)
 
     # Get point cloud from voxel volume and save to disk (can be viewed with Meshlab)
-    print("Saving point cloud to pc.ply...")
     point_cloud = hash_table.get_point_cloud()
     grid_fusion.pcwrite("pc_hash_demo1.ply", point_cloud)
 
@@ -158,7 +157,7 @@ def read_profile_file(filename, top_n_functions):
 
 def profile_main():
     graphviz = GraphvizOutput()
-    graphviz.output_file = 'hash_fusion_profiling_voxel_integrate_beta_abstract_bucket.png'
+    graphviz.output_file = 'final_hash_fusion.png'
     with PyCallGraph(output=graphviz):
         one_frame_profiling()
 
@@ -171,7 +170,7 @@ if __name__ == "__main__":
     # one_frame_profiling()
     # read_profile_file('cProfile/stats_one_frame', 20)
     # read_profile_file('cProfile/stats_ten_frame', 20)
-    # main()
+    main()
     # profile_main()
-    ten_frame_profiling()
+    # ten_frame_profiling()
 

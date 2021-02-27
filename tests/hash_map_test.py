@@ -100,17 +100,12 @@ class TestHashMap(unittest.TestCase):
             x = i
             y = i
             z = i
-            if x == 16100:
-                print("")
             world_coords.append([x, y, z])
             entry = he.HashEntry([x,y,z], None, None)
             hash_table.add_hash_entry(entry)
         self.assertEqual(4*10000, hash_table.count_num_hash_entries(), "test adding to maximum capacity")
-        hash_table.get_hash_entry([19875, 19875, 19875])
         for i in range(2*10000):
             position = world_coords[0]
-            if position == [19875, 19875, 19875]: #[16100, 16100, 16100]:
-                hash_table.get_hash_entry(position)
             world_coords.remove(position)
             hash_table.remove(position)
         self.assertEqual(2*10000, hash_table.count_num_hash_entries(), "test remove half of entries")

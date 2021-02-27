@@ -178,11 +178,10 @@ class HashTable:
         """
         if hash_entry is None:
             return -1
-        """
+
         if self.needs_resize():
             self.double_table_size()
 
-        """
         bi = self.hash_function(hash_entry.get_position())
         head_i = bi * self._bucket_size
         for offset in range(self._bucket_size):
