@@ -33,8 +33,9 @@ class TestHashMap(unittest.TestCase):
                         [82, 10, 27], [77, 58, 28], [57, 0, 29], [80, 25, 30], [43, 92, 31], [15, 26, 32], [33, 93, 33],
                         [23, 42, 34], [97, 22, 35], [6, 88, 36], [43, 51, 37], [6, 90, 38], [54, 83, 39]]
         for position in world_coords:
+            if position == [2, 71, 26]:
+                print("")
             hash_entry = he.HashEntry(position, None, None)
-            hash_table.hash_function(position)
             hash_table.add_hash_entry(hash_entry)
         self.assertEqual(40, hash_table.count_num_hash_entries(), "40 entries are added")
 
@@ -89,7 +90,6 @@ class TestHashMap(unittest.TestCase):
         for position in world_coords:
             hash_entry = he.HashEntry(position, None, None)
             hash_table.remove_hash_entry(hash_entry)
-        self.assertEqual(0, hash_table.get_num_non_empty_bucket())
         self.assertEqual(0, hash_table.count_num_hash_entries())
 
     def test_general(self):
@@ -100,13 +100,17 @@ class TestHashMap(unittest.TestCase):
             x = i
             y = i
             z = i
+            if x == 16100:
+                print("")
             world_coords.append([x, y, z])
-            entry = he.HashEntry((x,y,z), None, None)
+            entry = he.HashEntry([x,y,z], None, None)
             hash_table.add_hash_entry(entry)
         self.assertEqual(4*10000, hash_table.count_num_hash_entries(), "test adding to maximum capacity")
+        hash_table.get_hash_entry([19875, 19875, 19875])
         for i in range(2*10000):
-            index = np.random.randint(len(world_coords) - 1)
-            position = world_coords[index]
+            position = world_coords[0]
+            if position == [19875, 19875, 19875]: #[16100, 16100, 16100]:
+                hash_table.get_hash_entry(position)
             world_coords.remove(position)
             hash_table.remove(position)
         self.assertEqual(2*10000, hash_table.count_num_hash_entries(), "test remove half of entries")
