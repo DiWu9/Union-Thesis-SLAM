@@ -93,7 +93,7 @@ class HashTable:
         intr = intr.astype(np.float32)
         fx, fy = intr[0, 0], intr[1, 1]
         cx, cy = intr[0, 2], intr[1, 2]
-        pix = np.empty((cam_pts.shape[0], 2), dtype=np.int64)
+        pix = np.empty((cam_pts.shape[0], 2), dtype=np.int32)
         for i in prange(cam_pts.shape[0]):
             pix[i, 0] = int(np.round((cam_pts[i, 0] * fx / cam_pts[i, 2]) + cx))
             pix[i, 1] = int(np.round((cam_pts[i, 1] * fy / cam_pts[i, 2]) + cy))

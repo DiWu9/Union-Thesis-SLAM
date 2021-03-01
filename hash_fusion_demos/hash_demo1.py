@@ -154,7 +154,7 @@ if __name__ == "__main__":
     # one_frame_profiling()
     # read_profile_file('cProfile/stats_one_frame', 20)
     # read_profile_file('cProfile/stats_ten_frame', 20)
-    # main()
+    main()
     # profile_main()
-    ten_frame_profiling()
+    # ten_frame_profiling()
 
