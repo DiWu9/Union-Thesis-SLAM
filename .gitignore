@@ -4,4 +4,4 @@
 /hash_fusion_demos/*.ply
 /meshes
 /call_graph
-/dataset*
+/datasets
