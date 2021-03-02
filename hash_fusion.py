@@ -71,8 +71,18 @@ class HashTable:
     @njit(parallel=True)
     def vox2world(vol_origin, vox_coords, vox_size):
         """
-        source: https://github.com/andyzeng/tsdf-fusion-python
+        reference: https://github.com/andyzeng/tsdf-fusion-python
+        optimization: replace loop with matrix multiplication (Numba: Failed in nopython mode pipeline)
         Convert voxel grid coordinates to world coordinates.
+        """
+        """
+        vol_origin = vol_origin.astype(np.float32)
+        vox_coords = np.append(vox_coords, np.array([[1.] * vox_coords.shape[0]]).T, axis=1).T.astype(np.float32)
+        transform = np.array([[vox_size, 0, 0, vol_origin[0]], 
+                              [0, vox_size, 0, vol_origin[1]], 
+                              [0, 0, vox_size, vol_origin[2]], 
+                              [0, 0, 0, 1]]).astype(np.float32)
+        cam_pts = transform.dot(vox_coords)[:3].T
         """
         vol_origin = vol_origin.astype(np.float32)
         vox_coords = vox_coords.astype(np.float32)

@@ -25,13 +25,13 @@ def read_trajectory(filename):
 
 def main():
     cam_intr = np.loadtxt("../datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
-    camera_pose = read_trajectory("../datasets/dataset_stonewall/stonewall_trajectory.log")
+    camera_pose = read_trajectory("../datasets/dataset_cactusgarden/cactusgarden_trajectory.log")
     n_imgs = len(camera_pose) // 2
     vol_bnds = np.zeros((3, 2))
 
     for i in range(n_imgs):
         ith_frame = i * 2 + 1
-        depth_im = cv2.imread("../datasets/dataset_stonewall/stonewall_png/depth/%06d.png" % ith_frame,
+        depth_im = cv2.imread("../datasets/dataset_cactusgarden/cactusgarden_png/depth/%06d.png" % ith_frame,
                               -1).astype(np.float32)
         depth_im /= 1000.
         depth_im[depth_im == 65.535] = 0
@@ -48,9 +48,9 @@ def main():
         ith_frame = i * 2 + 1
         # Read RGB-D image and camera pose
         color_image = cv2.cvtColor(
-            cv2.imread("../datasets/dataset_stonewall/stonewall_png/color/%06d.png" % ith_frame),
+            cv2.imread("../datasets/dataset_cactusgarden/cactusgarden_png/color/%06d.png" % ith_frame),
             cv2.COLOR_BGR2RGB)
-        depth_im = cv2.imread("../datasets/dataset_stonewall/stonewall_png/depth/%06d.png" % ith_frame,
+        depth_im = cv2.imread("../datasets/dataset_cactusgarden/cactusgarden_png/depth/%06d.png" % ith_frame,
                               -1).astype(
             np.float32)
         depth_im /= 1000.
@@ -67,10 +67,10 @@ def main():
         print("Integrate frame {} in {} seconds. Avg: {}s/frame".format(ith_frame, tictoc, avg_time))
 
     verts, faces, norms, colors = tsdf_vol.get_mesh()
-    grid_fusion.meshwrite("../meshes/mesh_grid_demo3.ply", verts, faces, norms, colors)
+    grid_fusion.meshwrite("../meshes/mesh_grid_demo2.ply", verts, faces, norms, colors)
 
     point_cloud = tsdf_vol.get_point_cloud()
-    grid_fusion.pcwrite("../meshes/pc_grid_demo3.ply", point_cloud)
+    grid_fusion.pcwrite("../meshes/pc_grid_demo2.ply", point_cloud)
 
 
 if __name__ == "__main__":
