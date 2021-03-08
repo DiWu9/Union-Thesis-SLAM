@@ -5,8 +5,35 @@ import time
 
 import cv2
 import numpy as np
+from pycallgraph import PyCallGraph
+from pycallgraph.output import GraphvizOutput
+from memory_profiler import profile
 
 import grid_fusion
+
+
+def one_frame_profiling():
+    n_imgs = 1000
+    cam_intr = np.loadtxt("../datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
+    vol_bnds = np.zeros((3, 2))
+    for i in range(n_imgs):
+        # Read depth image and camera pose
+        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+        depth_im /= 1000.
+        depth_im[depth_im == 65.535] = 0
+        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+        view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
+        vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
+        vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
+
+    tsdf_vol = grid_fusion.TSDFVolume(vol_bnds, voxel_size=0.02)
+
+    color_image = cv2.cvtColor(cv2.imread("../datasets/dataset_kitchen/frame-%06d.color.jpg" % i), cv2.COLOR_BGR2RGB)
+    depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+    depth_im /= 1000.
+    depth_im[depth_im == 65.535] = 0
+    cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+    tsdf_vol.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
 
 
 def ten_frame_profiling():
@@ -15,10 +42,10 @@ def ten_frame_profiling():
     vol_bnds = np.zeros((3, 2))
     for i in range(n_imgs):
         # Read depth image and camera pose
-        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % (i), -1).astype(float)
+        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
         depth_im /= 1000.
         depth_im[depth_im == 65.535] = 0
-        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % (i))
+        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
         view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
         vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
         vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
@@ -28,11 +55,11 @@ def ten_frame_profiling():
     total_time = 0
     for i in range(10):
         tic = time.perf_counter()
-        color_image = cv2.cvtColor(cv2.imread("../datasets/dataset_kitchen/frame-%06d.color.jpg" % (i)), cv2.COLOR_BGR2RGB)
-        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % (i), -1).astype(float)
+        color_image = cv2.cvtColor(cv2.imread("../datasets/dataset_kitchen/frame-%06d.color.jpg" % i), cv2.COLOR_BGR2RGB)
+        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
         depth_im /= 1000.
         depth_im[depth_im == 65.535] = 0
-        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % (i))
+        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
         tsdf_vol.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
         toc = time.perf_counter()
         tictoc = round(toc - tic, 2)
@@ -100,6 +127,78 @@ def main():
     grid_fusion.pcwrite("pc.ply", point_cloud)
 
 
+def hundred_frame_time_profiling():
+    """
+    grid_fusion: demo1 (kitchen)
+    profiling 100 frames for run-time analysis
+    """
+    n_imgs = 1000
+    cam_intr = np.loadtxt("../datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
+    vol_bnds = np.zeros((3, 2))
+    for i in range(n_imgs):
+        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+        depth_im /= 1000.
+        depth_im[depth_im == 65.535] = 0
+        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+        view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
+        vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
+        vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
+
+    tsdf_vol = grid_fusion.TSDFVolume(vol_bnds, voxel_size=0.02)
+
+    for i in range(100):
+        color_image = cv2.cvtColor(cv2.imread("../datasets/dataset_kitchen/frame-%06d.color.jpg" % i),
+                                   cv2.COLOR_BGR2RGB)
+        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+        depth_im /= 1000.
+        depth_im[depth_im == 65.535] = 0
+        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+        tsdf_vol.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
+
+
+@profile
+def hundred_frame_space_profiling():
+    """
+    grid_fusion: demo1 (kitchen)
+    profiling 100 frames for space analysis
+
+    memory profiler command:
+        mprof run <script>
+        mprof plot
+    """
+    n_imgs = 1000
+    cam_intr = np.loadtxt("datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
+    vol_bnds = np.zeros((3, 2))
+    for i in range(n_imgs):
+        depth_im = cv2.imread("datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+        depth_im /= 1000.
+        depth_im[depth_im == 65.535] = 0
+        cam_pose = np.loadtxt("datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+        view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
+        vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
+        vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
+
+    tsdf_vol = grid_fusion.TSDFVolume(vol_bnds, voxel_size=0.02)
+
+    for i in range(100):
+        color_image = cv2.cvtColor(cv2.imread("datasets/dataset_kitchen/frame-%06d.color.jpg" % i),
+                                   cv2.COLOR_BGR2RGB)
+        depth_im = cv2.imread("datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+        depth_im /= 1000.
+        depth_im[depth_im == 65.535] = 0
+        cam_pose = np.loadtxt("datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+        tsdf_vol.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
+
+
+def profile_main():
+    graphviz = GraphvizOutput()
+    graphviz.output_file = '../call_graph/demo1_100_frame_call_graph/call_graph_grid_demo1.png'
+    with PyCallGraph(output=graphviz):
+        hundred_frame_time_profiling()
+
+
 if __name__ == "__main__":
-    ten_frame_profiling()
+    hundred_frame_space_profiling()
+    # profile_main()
+    # ten_frame_profiling()
     # main()

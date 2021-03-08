@@ -13,73 +13,73 @@ from pstats import SortKey
 
 from pycallgraph import PyCallGraph
 from pycallgraph.output import GraphvizOutput
+from memory_profiler import profile
 
 
-def one_frame_profiling():
+def hundred_frame_time_profiling():
+    """
+    hash_fusion: demo1 (kitchen)
+    profiling 100 frames for run-time analysis
+    """
     n_imgs = 1000
     cam_intr = np.loadtxt("../datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
     vol_bnds = np.zeros((3, 2))
     for i in range(n_imgs):
-        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % (i), -1).astype(float)
+        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
         depth_im /= 1000.
         depth_im[depth_im == 65.535] = 0
-        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % (i))
-        view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
-        vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
-        vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
-    hash_table = hash_fusion.HashTable(vol_bnds, voxel_size=0.02)
-
-    # fuse frame 0 for testing
-    color_image = cv2.cvtColor(cv2.imread("../datasets/dataset_kitchen/frame-%06d.color.jpg" % 0), cv2.COLOR_BGR2RGB)
-    depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % 0, -1).astype(float)
-    depth_im /= 1000.
-    depth_im[depth_im == 65.535] = 0
-    cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % 0)
-    hash_table.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
-
-
-def ten_frame_profiling():
-    n_imgs = 1000
-    cam_intr = np.loadtxt("../datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
-    vol_bnds = np.zeros((3, 2))
-    for i in range(n_imgs):
-        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % (i), -1).astype(float)
-        depth_im /= 1000.
-        depth_im[depth_im == 65.535] = 0
-        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % (i))
+        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
         view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
         vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
         vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
 
     hash_table = hash_fusion.HashTable(vol_bnds, voxel_size=0.02)
 
-    total_time = 0
-    # Loop through the first 10 RGB-D images and fuse them together
-    for i in range(10):
-        tic = time.perf_counter()
-
-        color_image = cv2.cvtColor(cv2.imread("../datasets/dataset_kitchen/frame-%06d.color.jpg" % (i)), cv2.COLOR_BGR2RGB)
-        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % (i), -1).astype(float)
+    for i in range(100):
+        color_image = cv2.cvtColor(cv2.imread("../datasets/dataset_kitchen/frame-%06d.color.jpg" % i), cv2.COLOR_BGR2RGB)
+        depth_im = cv2.imread("../datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
         depth_im /= 1000.
         depth_im[depth_im == 65.535] = 0
-        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % (i))
+        cam_pose = np.loadtxt("../datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
         hash_table.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
 
-        toc = time.perf_counter()
-        tictoc = round(toc - tic, 2)
-        total_time += tictoc
-        avg_time = round(total_time / (i + 1), 2)
-        print("Integrate frame {} in {} seconds. Avg: {}s/frame".format(i + 1, tictoc, avg_time))
-    verts, faces, norms, colors = hash_table.get_mesh()
-    grid_fusion.meshwrite("mesh_hash_demo1.ply", verts, faces, norms, colors)
 
-    # Get point cloud from voxel volume and save to disk (can be viewed with Meshlab)
-    print("Saving point cloud to pc.ply...")
-    point_cloud = hash_table.get_point_cloud()
-    grid_fusion.pcwrite("pc_hash_demo1.ply", point_cloud)
+@profile
+def hundred_frame_space_profiling():
+    """
+    hash_fusion: demo1 (kitchen)
+    profiling 100 frames for memory analysis
+
+    memory profiler command:
+        mprof run <script>
+        mprof plot
+    """
+    n_imgs = 1000
+    cam_intr = np.loadtxt("datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
+    vol_bnds = np.zeros((3, 2))
+    for i in range(n_imgs):
+        depth_im = cv2.imread("datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+        depth_im /= 1000.
+        depth_im[depth_im == 65.535] = 0
+        cam_pose = np.loadtxt("datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+        view_frust_pts = grid_fusion.get_view_frustum(depth_im, cam_intr, cam_pose)
+        vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(view_frust_pts, axis=1))
+        vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(view_frust_pts, axis=1))
+    hash_table = hash_fusion.HashTable(vol_bnds, voxel_size=0.02)
+    for i in range(100):
+        color_image = cv2.cvtColor(cv2.imread("datasets/dataset_kitchen/frame-%06d.color.jpg" % i), cv2.COLOR_BGR2RGB)
+        depth_im = cv2.imread("datasets/dataset_kitchen/frame-%06d.depth.png" % i, -1).astype(float)
+        depth_im /= 1000.
+        depth_im[depth_im == 65.535] = 0
+        cam_pose = np.loadtxt("datasets/dataset_kitchen/frame-%06d.pose.txt" % i)
+        hash_table.integrate(color_image, depth_im, cam_intr, cam_pose, obs_weight=1.)
 
 
 def main():
+    """
+    hash_fusion: demo1 (kitchen)
+    fusing 1000 frames to get the result
+    """
     n_imgs = 1000
     cam_intr = np.loadtxt("../datasets/dataset_kitchen/camera-intrinsics.txt", delimiter=' ')
     vol_bnds = np.zeros((3, 2))
@@ -141,9 +141,9 @@ def read_profile_file(filename, top_n_functions):
 
 def profile_main():
     graphviz = GraphvizOutput()
-    graphviz.output_file = 'final_hash_fusion.png'
+    graphviz.output_file = '../call_graph/demo1_100_frame_call_graph/call_graph_hash_demo1.png'
     with PyCallGraph(output=graphviz):
-        one_frame_profiling()
+        hundred_frame_time_profiling()
 
 
 if __name__ == "__main__":
@@ -151,10 +151,10 @@ if __name__ == "__main__":
     # read_profile_file('cProfile/stats_hash_function', 10)
     # profile_function_write_file('one_frame_profiling()', 'cProfile/stats_one_frame')
     # profile_function_write_file('ten_frame_profiling()', 'cProfile/stats_ten_frame')
-    # one_frame_profiling()
     # read_profile_file('cProfile/stats_one_frame', 20)
     # read_profile_file('cProfile/stats_ten_frame', 20)
-    main()
+    # main()
     # profile_main()
     # ten_frame_profiling()
+    hundred_frame_space_profiling()
 
