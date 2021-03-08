@@ -7,7 +7,7 @@ The example of volumetric grid is directly downloaded from [Volumetric TSDF Fusi
 
 ## Image Sets:
 
-(Total Number) image sets are tested on both data structures for running time and space efficiency analysis.
+Three image sets are tested on both data structures for running time and space efficiency analysis.
 
 1. A kitchen image sets with RGB-D image and each frame's camera pose are provided by the open source [Volumetric TSDF Fusion of RGB-D Images in Python](https://github.com/andyzeng/tsdf-fusion-python) (1000 frames).
 2. The cactus garden at Stanford with RGB-D images and camera pose are provided by the open source [Qianyi Zhou's Homepage](http://qianyi.info/scenedata.html) (2700 frames).
